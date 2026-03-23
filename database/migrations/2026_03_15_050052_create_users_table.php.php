@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('full_name',255);
 
             $table->string('email',255)->unique();
-            $table->string('password_hash',255);
+            $table->string('password',255);
 
             $table->foreignId('major_id')
                 ->nullable()
