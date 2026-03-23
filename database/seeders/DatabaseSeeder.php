@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CoursesSeeder::class,
             LecturersSeeder::class,
             AcademicYearsSeeder::class,
+            UserSeeder::class,
             TopicsSeeder::class,
             ClassesSeeder::class,
         ]);
