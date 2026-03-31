@@ -16,6 +16,14 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             TopicsSeeder::class,
             ClassesSeeder::class,
+            QuizSeeder::class,
+            QuizTopicSeeder::class,
+            QuestionSeeder::class,
+            OptionSeeder::class,
+            QuizSnapshotSeeder::class,
+            AttemptSeeder::class,
+            QuizCopySeeder::class,
+            UserQuizStatsSeeder::class,
         ]);
     }
 }
