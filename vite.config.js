@@ -2,6 +2,15 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
+    base: '/build/',
+    server: {
+        host: 'true', // WAJIB agar bisa diakses dari HP
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: '10.20.14.111',
+        },
+    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],

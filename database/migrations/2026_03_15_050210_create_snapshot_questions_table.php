@@ -24,6 +24,8 @@ return new class extends Migration
 
             $table->integer('order_index');
 
+            $table->text('explanation')->nullable();
+            
             $table->index('snapshot_id');
 
         });
