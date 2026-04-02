@@ -46,10 +46,16 @@ class QuizSeeder extends Seeder
 
         $quizzes = [];
 
+        $baseDate = now()->subDays(10);
+
         for ($i = 0; $i < 10; $i++) {
 
+            $createdAt = $baseDate->copy()
+                ->addDays($i)
+                ->setTime(rand(8, 22), rand(0, 59), rand(0, 59)); // jam random
+
             $quizzes[] = [
-                'author_id' => $users[$i % 2], // alternating 2 user
+                'author_id' => $users[$i % 2],
 
                 'title' => $titles[$i],
                 'description' => 'Quiz tentang ' . $titles[$i],
@@ -62,7 +68,7 @@ class QuizSeeder extends Seeder
 
                 'semester' => rand(1, 8),
 
-                'visibility' => 'final',
+                'visibility' => rand(0, 1) ? 'draft' : 'published',
                 'access' => rand(0, 1) ? 'public' : 'private',
 
                 'allow_copy' => rand(0, 1),
@@ -71,8 +77,9 @@ class QuizSeeder extends Seeder
 
                 'cover_image_url' => null,
 
-                'created_at' => $now,
-                'updated_at' => $now,
+                // ✅ FIX UTAMA
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt->copy()->addMinutes(rand(10, 180)),
             ];
         }
 
