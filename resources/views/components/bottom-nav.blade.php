@@ -25,11 +25,14 @@
             class="w-6 h-6 brightness-0 invert" alt="">
     </a>
 
-    {{-- CREATE --}}
-    <a href="#"
-       class="p-3 rounded-full hover:bg-white/20 active:bg-white transition-all">
+    <!-- create -->
+    <a href="{{ route('my-quizzes.index') }}"
+        class="p-4 rounded-full transition
+        {{ request()->routeIs('my-quizzes.index') ? 'bg-white/90' : 'hover:bg-white/20 active:bg-white' }}">
+
         <img src="{{ asset('assets/dashboard/icons/img_create_order.png') }}"
-            class="w-6 h-6 brightness-0 invert" alt="">
+                class="w-6 h-6 {{ request()->routeIs('my-quizzes.index') ? '' : 'brightness-0 invert' }}">
     </a>
+
 
 </div>

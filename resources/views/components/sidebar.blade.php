@@ -28,9 +28,13 @@
                  class="w-8 h-8 invert">
         </a>
 
-        <a href="#" class="p-4 rounded-full hover:bg-white/20">
+        <!-- my quizzes -->
+        <a href="{{ route('my-quizzes.index') }}"
+           class="p-4 rounded-full transition
+           {{ request()->routeIs('my-quizzes.index') ? 'bg-white/90' : 'hover:bg-white/20 active:bg-white' }}">
+
             <img src="{{ asset('assets/dashboard/icons/img_create_order.png') }}"
-                 class="w-8 h-8 invert">
+                 class="w-8 h-8 {{ request()->routeIs('my-quizzes.index') ? '' : 'brightness-0 invert' }}">
         </a>
 
     </div>
