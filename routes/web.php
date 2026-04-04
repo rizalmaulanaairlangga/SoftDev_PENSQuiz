@@ -24,13 +24,24 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/attempt/save-answer', [AttemptController::class, 'saveAnswer'])->name('attempt.saveAnswer');
     Route::post('/attempt/exit', [AttemptController::class, 'exit'])->name('attempt.exit');
 
+    
     Route::get('/my-quizzes', [MyQuizController::class, 'index'])
         ->name('my-quizzes.index');
-    Route::get('/my-quizzes/create', [MyQuizController::class, 'create'])->name('my-quizzes.create');
-    Route::post('/my-quizzes', [MyQuizController::class, 'store'])->name('my-quizzes.store');
-    Route::get('/my-quizzes/{myquiz}/edit', [MyQuizController::class, 'edit'])->name('my-quizzes.edit');
-    Route::put('/my-quizzes/{myquiz}', [MyQuizController::class, 'update'])->name('my-quizzes.update');
-    Route::delete('/my-quizzes/{myquiz}', [MyQuizController::class, 'destroy'])->name('my-quizzes.destroy');
+
+    Route::get('/my-quizzes/create', [MyQuizController::class, 'create'])
+        ->name('my-quizzes.create');
+
+    Route::post('/my-quizzes', [MyQuizController::class, 'store'])
+        ->name('my-quizzes.store');
+
+    Route::get('/my-quizzes/{myquiz}/edit', [MyQuizController::class, 'edit'])
+        ->name('my-quizzes.edit');
+
+    Route::put('/my-quizzes/{myquiz}', [MyQuizController::class, 'update'])
+        ->name('my-quizzes.update');
+
+    Route::delete('/my-quizzes/{myquiz}', [MyQuizController::class, 'destroy'])
+        ->name('my-quizzes.destroy');
     // Route::get('/quizzes', [QuizController::class, 'discover']);
     // Route::get('/quizzes/{id}', [QuizController::class, 'show']);
 

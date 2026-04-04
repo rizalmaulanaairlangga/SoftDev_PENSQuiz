@@ -90,7 +90,7 @@ class MyQuizController extends Controller
             ]);
         }
 
-        $quiz = DB::transaction(function () use ($request, $validated, $normalizedQuestions) {
+        DB::transaction(function () use ($request, $validated, $normalizedQuestions) {
             $quiz = MyQuiz::create([
                 'author_id' => Auth::id(),
                 'title' => $validated['title'],
@@ -112,17 +112,13 @@ class MyQuizController extends Controller
                 'cover_image_url' => $this->storeCover($request),
             ]);
 
-            if (!empty($normalizedQuestions)) {
-                $this->syncQuestions($quiz, $normalizedQuestions);
-            }
-
-            return $quiz;
+            $this->syncQuestions($quiz, $normalizedQuestions);
         });
 
         return redirect()
             ->route('my-quizzes.index')
             ->with('success', 'Quiz created successfully.')
-            ->with('clearDraftKey', 'pensquiz-quiz-draft-v2-new');
+            ->with('clearDraftKey', 'pensquiz-quiz-draft-v5-new');
     }
 
     public function edit(MyQuiz $myquiz)
@@ -190,23 +186,20 @@ class MyQuizController extends Controller
                 'cover_image_url' => $coverImageUrl,
             ]);
 
-            if (!empty($normalizedQuestions)) {
-                $myquiz->questions()->delete();
-                $this->syncQuestions($myquiz, $normalizedQuestions);
-            }
+            $this->syncQuestions($myquiz, $normalizedQuestions);
         });
 
         return redirect()
             ->route('my-quizzes.index')
             ->with('success', 'Quiz updated successfully.')
-            ->with('clearDraftKey', 'pensquiz-quiz-draft-v2-' . $myquiz->id_quiz);
+            ->with('clearDraftKey', 'pensquiz-quiz-draft-v5-' . $myquiz->id_quiz);
     }
 
     public function destroy(MyQuiz $myquiz)
     {
         abort_unless($myquiz->author_id === Auth::id(), 403);
 
-        $myquiz->delete();
+        $myquiz->forceDelete();
 
         return redirect()
             ->route('my-quizzes.index')
@@ -251,7 +244,10 @@ class MyQuizController extends Controller
             foreach (array_values($rawOptions) as $option) {
                 $optionContent = trim((string) ($option['content'] ?? ''));
                 if ($optionContent !== '') {
-                    $options[] = ['content' => $optionContent];
+                    $options[] = [
+                        'id_option' => $option['id_option'] ?? null,
+                        'content' => $optionContent,
+                    ];
                 }
             }
 
@@ -294,6 +290,7 @@ class MyQuizController extends Controller
             }
 
             $normalized[] = [
+                'id_question' => $question['id_question'] ?? null,
                 'type' => $type,
                 'content' => $content,
                 'explanation' => $explanation !== '' ? $explanation : null,
@@ -307,22 +304,73 @@ class MyQuizController extends Controller
 
     private function syncQuestions(MyQuiz $quiz, array $questions): void
     {
-        foreach (array_values($questions) as $questionIndex => $questionData) {
-            $question = $quiz->questions()->create([
-                'content' => $questionData['content'],
-                'question_type' => $questionData['type'],
-                'order_index' => $questionIndex + 1,
-                'explanation' => $questionData['explanation'],
-            ]);
+        $keepQuestionIds = [];
 
-            foreach ($questionData['options'] as $optionIndex => $optionData) {
-                $question->options()->create([
-                    'content' => $optionData['content'],
-                    'is_correct' => in_array((string) $optionIndex, $questionData['correct_indexes'], true),
-                    'order_index' => $optionIndex + 1,
+        foreach (array_values($questions) as $questionIndex => $questionData) {
+            $question = null;
+
+            if (!empty($questionData['id_question'])) {
+                $question = $quiz->questions()
+                    ->where('id_question', $questionData['id_question'])
+                    ->first();
+            }
+
+            if ($question) {
+                $question->update([
+                    'content' => $questionData['content'],
+                    'question_type' => $questionData['type'],
+                    'order_index' => $questionIndex + 1,
+                    'explanation' => $questionData['explanation'],
+                ]);
+            } else {
+                $question = $quiz->questions()->create([
+                    'content' => $questionData['content'],
+                    'question_type' => $questionData['type'],
+                    'order_index' => $questionIndex + 1,
+                    'explanation' => $questionData['explanation'],
                 ]);
             }
+
+            $keepQuestionIds[] = $question->id_question;
+
+            $keepOptionIds = [];
+
+            foreach ($questionData['options'] as $optionIndex => $optionData) {
+                $option = null;
+
+                if (!empty($optionData['id_option'])) {
+                    $option = $question->options()
+                        ->where('id_option', $optionData['id_option'])
+                        ->first();
+                }
+
+                $isCorrect = in_array((string) $optionIndex, $questionData['correct_indexes'], true);
+
+                if ($option) {
+                    $option->update([
+                        'content' => $optionData['content'],
+                        'is_correct' => $isCorrect,
+                        'order_index' => $optionIndex + 1,
+                    ]);
+                } else {
+                    $option = $question->options()->create([
+                        'content' => $optionData['content'],
+                        'is_correct' => $isCorrect,
+                        'order_index' => $optionIndex + 1,
+                    ]);
+                }
+
+                $keepOptionIds[] = $option->id_option;
+            }
+
+            $question->options()
+                ->whereNotIn('id_option', $keepOptionIds)
+                ->delete();
         }
+
+        $quiz->questions()
+            ->whereNotIn('id_question', $keepQuestionIds)
+            ->delete();
     }
 
     private function storeCover(Request $request): ?string
@@ -356,12 +404,14 @@ class MyQuizController extends Controller
                 : 'single_answer';
 
             return [
+                'id_question' => $question->id_question,
                 'type' => $type,
                 'content' => $question->content,
                 'explanation' => $question->explanation,
                 'correct_option' => $correctIndexes[0] ?? '0',
                 'correct_options' => $correctIndexes,
                 'options' => $options->map(fn ($option) => [
+                    'id_option' => $option->id_option,
                     'content' => $option->content,
                 ])->all(),
             ];

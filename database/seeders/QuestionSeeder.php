@@ -26,7 +26,7 @@ class QuestionSeeder extends Seeder
                 $questions[] = [
                     'quiz_id' => $quizId,
                     'content' => "Soal ke-" . ($i + 1) . " untuk quiz ID $quizId",
-                    'question_type' => rand(0,1) ? 'single' : 'multi',
+                    'question_type' => rand(0,1) ? 'single_answer' : 'multiple_answer',
                     'order_index' => $i,
                     'explanation' => 'Penjelasan singkat soal ini.',
                     'created_at' => $now,

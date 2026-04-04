@@ -1,8 +1,9 @@
 <x-app-layout>
+
 @php
     $isEdit = $quiz->exists;
-    $questionsData = old('questions');
 
+    $questionsData = old('questions');
     if (!is_array($questionsData) || empty($questionsData)) {
         $questionsData = $formQuestions;
     }
@@ -10,7 +11,20 @@
     $selectedVisibility = old('visibility', $quiz->visibility ?? 'draft');
     $selectedAccess = old('access', $quiz->access ?? 'private');
     $selectedAllowCopy = old('allow_copy', $quiz->allow_copy ?? false);
-    $draftKey = 'pensquiz-quiz-draft-v3-' . ($quiz->exists ? $quiz->id_quiz : 'new');
+
+    $draftKey = 'pensquiz-quiz-draft-v5-' . ($quiz->exists ? $quiz->id_quiz : 'new');
+
+    $originalQuizState = [
+        'title' => $quiz->title ?? '',
+        'description' => $quiz->description ?? '',
+        'course_id' => $quiz->course_id ?? '',
+        'semester' => $quiz->semester ?? '',
+        'access' => $quiz->access ?? 'private',
+        'visibility' => $quiz->visibility ?? 'draft',
+        'allow_copy' => (bool) ($quiz->allow_copy ?? false),
+        'cover_image_url' => $quiz->cover_image_url ?? null,
+        'questions' => $formQuestions,
+    ];
 @endphp
 
 <div class="min-h-screen bg-[#f5f5f5] px-4 py-6 lg:px-6">
@@ -214,6 +228,7 @@
                                     @endphp
 
                                     <div class="question-card rounded-[18px] border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md" data-question-card data-question-index="{{ $index }}">
+                                        <input type="hidden" name="questions[{{ $index }}][id_question]" value="{{ $question['id_question'] ?? '' }}">
                                         <div class="flex items-center justify-between gap-3">
                                             <div class="flex items-center gap-3">
                                                 <span data-question-number class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#104876] text-sm font-bold text-white">
@@ -279,6 +294,7 @@
                                                 <div data-options-list class="space-y-2">
                                                     @foreach($options as $oIndex => $option)
                                                         <div class="option-row flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                                                            <input type="hidden" name="questions[{{ $index }}][options][{{ $oIndex }}][id_option]" value="{{ $option['id_option'] ?? '' }}">
                                                             <div data-correct-control class="mt-1">
                                                                 @if($questionType === 'multiple_answer')
                                                                     <input
@@ -376,53 +392,47 @@
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onclick="submitQuizForm('published', '{{ route('my-quizzes.index') }}')"
-                        class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-[#104876] px-5 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#1a5a8a] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/30 active:scale-[0.99]"
-                    >
-                        Publish Quiz
-                    </button>
-
-                    <button
-                        type="button"
-                        onclick="submitQuizForm('draft', '{{ route('my-quizzes.index') }}')"
-                        class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-white px-5 py-4 text-base font-semibold text-gray-900 shadow-sm transition hover:bg-gray-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 active:scale-[0.99]"
-                    >
-                        Save as Draft
-                    </button>
-
-                    
-                    @if($quiz->exists)
-                        <!-- DELETE (DATABASE) -->
-                        <form 
-                            action="{{ route('my-quizzes.destroy', $quiz) }}" 
-                            method="POST"
-                            onsubmit="clearAllQuizDrafts(); return confirm('Delete this quiz permanently?');"
+                        <button
+                            type="button"
+                            onclick="submitQuizForm('published')"
+                            class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-[#104876] px-5 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#1a5a8a] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/30 active:scale-[0.99]"
                         >
-                            @csrf
-                            @method('DELETE')
+                            {{ $isEdit ? 'Update & Publish Quiz' : 'Publish Quiz' }}
+                        </button>
+
+                        <button
+                            type="button"
+                            onclick="submitQuizForm('draft')"
+                            class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-white px-5 py-4 text-base font-semibold text-gray-900 shadow-sm transition hover:bg-gray-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 active:scale-[0.99]"
+                        >
+                            {{ $isEdit ? 'Update as Draft' : 'Save as Draft' }}
+                        </button>
+
+                        @if($quiz->exists)
+                            <button
+                                type="button"
+                                onclick="discardChanges()"
+                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
+                            >
+                                Discard Changes
+                            </button>
 
                             <button
                                 type="submit"
-                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition
-                                    hover:bg-red-50 hover:shadow-md
-                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400
-                                    active:scale-[0.98]"
+                                form="deleteQuizForm"
+                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
                             >
                                 Delete Quiz
                             </button>
-                        </form>
-                    @else
-                        <!-- DISCARD (LOCAL ONLY) -->
-                    <button
-                        type="button"
-                        onclick="resetCreateForm()"
-                        class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 active:scale-[0.98]"
-                    >
-                        Discard Quiz
-                    </button>
-                    @endif
+                        @else
+                            <button
+                                type="button"
+                                onclick="resetCreateForm()"
+                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
+                            >
+                                Discard Quiz
+                            </button>
+                        @endif
                 </aside>
             </div>
 
@@ -496,6 +506,18 @@
             </template>
         </form>
 
+<!-- FORM DELETE DI LUAR -->
+@if($quiz->exists)
+    <form 
+        id="deleteQuizForm"
+        action="{{ route('my-quizzes.destroy', $quiz) }}" 
+        method="POST"
+        onsubmit="clearAllQuizDrafts(); return confirm('Delete this quiz permanently?');"
+    >
+        @csrf
+        @method('DELETE')
+    </form>
+@endif
     </div>
 </div>
 
@@ -503,7 +525,7 @@
     <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl">
         <h3 id="leaveModalTitle" class="text-lg font-bold text-gray-900">Leave this quiz form?</h3>
         <p id="leaveModalText" class="mt-2 text-sm text-gray-600">
-            You have unsaved progress. Save it as draft, discard it, or stay on this page.
+            You have unsaved changes. Save them as draft, discard them, or stay on this page.
         </p>
 
         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -535,31 +557,51 @@
 </div>
 
 <script>
+    const isEdit = @json($isEdit);
     const draftKey = @json($draftKey);
     const hasServerErrors = @json($errors->any());
+    const originalQuizState = @json($originalQuizState);
+
     const quizForm = document.getElementById('quizForm');
     const questionsList = document.getElementById('questionsList');
-
     const leaveModal = document.getElementById('leaveModal');
+    const leaveModalText = document.getElementById('leaveModalText');
 
     let questionIndex = getNextQuestionIndex();
     let saveTimer = null;
     let dirty = false;
     let isSubmitting = false;
     let pendingNavigationUrl = null;
-
     let skipDraftSave = false;
 
     function clearAllQuizDrafts() {
         Object.keys(localStorage).forEach((key) => {
-            if (key.startsWith('pensquiz-quiz-draft-v3-')) {
+            if (key.startsWith('pensquiz-quiz-draft-v5-')) {
                 localStorage.removeItem(key);
             }
         });
     }
 
+    function clearLegacyDrafts() {
+        Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith('pensquiz-quiz-draft-v3-') || key.startsWith('pensquiz-quiz-draft-v4-')) {
+                localStorage.removeItem(key);
+            }
+        });
+    }
+
+    function clearDraftState() {
+        localStorage.removeItem(draftKey);
+    }
+
     function openLeaveModal(url) {
         pendingNavigationUrl = url;
+
+        if (leaveModalText) {
+            leaveModalText.textContent = isEdit
+                ? 'You have unsaved changes. Save them as draft, discard the changes, or stay on this page.'
+                : 'You have unsaved progress. Save it as draft, discard it, or stay on this page.';
+        }
 
         if (leaveModal) {
             leaveModal.classList.remove('hidden');
@@ -576,6 +618,55 @@
         }
     }
 
+    function applyCoverPreview(url) {
+        const preview = document.getElementById('coverPreview');
+        const placeholder = document.getElementById('coverPlaceholder');
+
+        if (!preview || !placeholder) return;
+
+        if (url) {
+            preview.src = url;
+            preview.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        } else {
+            preview.src = '';
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+        }
+    }
+
+    function applyQuizState(state) {
+        if (!state) return;
+
+        const titleInput = document.getElementById('quizTitleInput');
+        const descriptionInput = document.getElementById('quizDescriptionInput');
+        const courseSelect = document.getElementById('courseSelect');
+        const semesterInput = document.getElementById('semesterInput');
+        const accessSelect = document.getElementById('accessSelect');
+        const visibilityInput = document.getElementById('visibilityInput');
+        const allowCopyInput = document.getElementById('allowCopyInput');
+        const removeCoverInput = document.getElementById('removeCoverInput');
+        const list = document.getElementById('questionsList');
+
+        if (titleInput && state.title !== undefined) titleInput.value = state.title ?? '';
+        if (descriptionInput && state.description !== undefined) descriptionInput.value = state.description ?? '';
+        if (courseSelect && state.course_id !== undefined) courseSelect.value = state.course_id ?? '';
+        if (semesterInput && state.semester !== undefined) semesterInput.value = state.semester ?? '';
+        if (accessSelect && state.access !== undefined) accessSelect.value = state.access ?? 'private';
+        if (visibilityInput && state.visibility !== undefined) visibilityInput.value = state.visibility ?? 'draft';
+        if (allowCopyInput && state.allow_copy !== undefined) allowCopyInput.checked = !!state.allow_copy;
+        if (removeCoverInput) removeCoverInput.value = '0';
+        if (state.cover_image_url !== undefined) applyCoverPreview(state.cover_image_url);
+
+        if (list && Array.isArray(state.questions)) {
+            list.innerHTML = state.questions.map((question, index) => buildQuestionCard(index, question)).join('');
+        }
+
+        updateQuestionNumbers();
+        updateSummary();
+        questionIndex = getNextQuestionIndex();
+    }
+
     function resetCreateForm() {
         if (!confirm('Discard all progress?')) return;
 
@@ -583,6 +674,21 @@
         clearAllQuizDrafts();
         dirty = false;
         window.location.href = @json(route('my-quizzes.create'));
+    }
+
+    function discardChanges() {
+        if (isEdit) {
+            if (!confirm('Discard all changes and restore the quiz to the saved database version?')) return;
+
+            skipDraftSave = true;
+            clearDraftState();
+            dirty = false;
+            applyQuizState(originalQuizState);
+            updateSummary();
+            return;
+        }
+
+        resetCreateForm();
     }
 
     function proceedLeaveWithoutSave() {
@@ -593,10 +699,10 @@
         window.location.href = pendingNavigationUrl;
     }
 
-    async function saveDraftThenLeave() {
+    function saveDraftThenLeave() {
         if (!pendingNavigationUrl) return;
 
-        await submitQuizForm('draft', pendingNavigationUrl);
+        submitQuizForm('draft');
     }
 
     function setVisibility(value) {
@@ -615,18 +721,7 @@
             removeCoverInput.value = '1';
         }
 
-        const preview = document.getElementById('coverPreview');
-        const placeholder = document.getElementById('coverPlaceholder');
-
-        if (preview) {
-            preview.src = '';
-            preview.classList.add('hidden');
-        }
-
-        if (placeholder) {
-            placeholder.classList.remove('hidden');
-        }
-
+        applyCoverPreview('');
         markDirty();
         updateSummary();
     }
@@ -669,9 +764,12 @@
 
         const content = optionData.content ?? '';
         const checked = optionData.checked ?? (optionIndex === 0 && questionType === 'single_answer');
+        const optionId = optionData.id_option ?? '';
 
         return `
             <div class="option-row flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                <input type="hidden" name="questions[${questionIndexValue}][options][${optionIndex}][id_option]" value="${escapeHtml(optionId)}">
+
                 <div data-correct-control class="mt-1">
                     <input
                         type="${inputType}"
@@ -703,6 +801,7 @@
 
     function buildQuestionCard(index, data = null) {
         const type = data?.type || 'single_answer';
+        const questionId = data?.id_question || '';
         const content = data?.content || '';
         const explanation = data?.explanation || '';
         const options = Array.isArray(data?.options) && data.options.length
@@ -723,6 +822,7 @@
                 : String(correctOption) === String(oIndex);
 
             return buildOptionRow(index, oIndex, type, {
+                id_option: option.id_option ?? '',
                 content: option.content ?? '',
                 checked: checked,
             });
@@ -730,6 +830,8 @@
 
         return `
             <div class="question-card rounded-[18px] border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md" data-question-card data-question-index="${index}">
+                <input type="hidden" name="questions[${index}][id_question]" value="${escapeHtml(questionId)}">
+
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <span data-question-number class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#104876] text-sm font-bold text-white">${index + 1}</span>
@@ -813,6 +915,7 @@
             card.remove();
         }
 
+        reindexQuestions();
         updateQuestionNumbers();
         updateSummary();
         markDirty();
@@ -840,6 +943,7 @@
             row.remove();
         }
 
+        reindexQuestions();
         updateSummary();
         markDirty();
         saveDraftState();
@@ -850,13 +954,17 @@
 
         const type = card.querySelector('.question-type-select')?.value || 'single_answer';
         const qIndex = card.dataset.questionIndex;
-        const rows = card.querySelectorAll('.option-row');
+        const rows = Array.from(card.querySelectorAll('.option-row'));
+
+        const checkedIndices = rows
+            .map((row, idx) => {
+                const currentInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
+                return currentInput?.checked ? idx : null;
+            })
+            .filter((value) => value !== null);
 
         rows.forEach((row, idx) => {
             const currentControl = row.querySelector('[data-correct-control]');
-            const currentInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
-            const wasChecked = currentInput?.checked || false;
-
             if (!currentControl) return;
 
             currentControl.innerHTML = '';
@@ -868,7 +976,12 @@
                 : `questions[${qIndex}][correct_option]`;
             input.value = idx;
             input.className = 'h-4 w-4 cursor-pointer text-[#104876] focus:ring-[#104876]';
-            input.checked = wasChecked;
+
+            if (type === 'multiple_answer') {
+                input.checked = checkedIndices.includes(idx);
+            } else {
+                input.checked = (checkedIndices[0] ?? 0) === idx;
+            }
 
             currentControl.appendChild(input);
         });
@@ -889,6 +1002,30 @@
         saveDraftState();
     }
 
+    function reindexQuestions() {
+        const cards = document.querySelectorAll('[data-question-card]');
+
+        cards.forEach((card, qIndex) => {
+            card.dataset.questionIndex = qIndex;
+
+            card.querySelectorAll('[name]').forEach((el) => {
+                el.name = el.name.replace(/questions\[\d+\]/, `questions[${qIndex}]`);
+            });
+
+            const optionRows = card.querySelectorAll('.option-row');
+            optionRows.forEach((row, oIndex) => {
+                row.querySelectorAll('[name]').forEach((el) => {
+                    el.name = el.name
+                        .replace(/questions\[\d+\]/, `questions[${qIndex}]`)
+                        .replace(/options\[\d+\]/, `options[${oIndex}]`);
+                });
+
+                const input = row.querySelector('input[type="radio"], input[type="checkbox"]');
+                if (input) input.value = oIndex;
+            });
+        });
+    }
+
     function updateQuestionNumbers() {
         const cards = document.querySelectorAll('[data-question-card]');
         cards.forEach((card, idx) => {
@@ -903,20 +1040,14 @@
         const badge = document.getElementById('questionCountBadge');
         const summaryCount = document.getElementById('summaryQuestionCount');
 
-        if (badge) {
-            badge.textContent = `${count} Questions`;
-        }
-
-        if (summaryCount) {
-            summaryCount.textContent = count;
-        }
+        if (badge) badge.textContent = `${count} Questions`;
+        if (summaryCount) summaryCount.textContent = count;
 
         questionIndex = cards.length;
     }
 
     function updateSummary() {
         const titleInput = document.getElementById('quizTitleInput');
-        const descriptionInput = document.getElementById('quizDescriptionInput');
         const courseSelect = document.getElementById('courseSelect');
         const semesterInput = document.getElementById('semesterInput');
         const accessSelect = document.getElementById('accessSelect');
@@ -932,18 +1063,14 @@
         const summaryQuestionCount = document.getElementById('summaryQuestionCount');
         const questionCountBadge = document.getElementById('questionCountBadge');
 
-        if (summaryTitle) {
-            summaryTitle.textContent = titleInput?.value?.trim() || '—';
-        }
+        if (summaryTitle) summaryTitle.textContent = titleInput?.value?.trim() || '—';
 
         if (summaryCourse) {
             const selectedText = courseSelect?.selectedOptions?.[0]?.text?.trim();
             summaryCourse.textContent = selectedText || 'No course';
         }
 
-        if (summarySemester) {
-            summarySemester.textContent = semesterInput?.value || '—';
-        }
+        if (summarySemester) summarySemester.textContent = semesterInput?.value || '—';
 
         if (summaryAccess) {
             const value = accessSelect?.value || '';
@@ -962,13 +1089,8 @@
         const cards = document.querySelectorAll('[data-question-card]');
         const count = cards.length;
 
-        if (summaryQuestionCount) {
-            summaryQuestionCount.textContent = count;
-        }
-
-        if (questionCountBadge) {
-            questionCountBadge.textContent = `${count} Questions`;
-        }
+        if (summaryQuestionCount) summaryQuestionCount.textContent = count;
+        if (questionCountBadge) questionCountBadge.textContent = `${count} Questions`;
     }
 
     function markDirty() {
@@ -980,10 +1102,12 @@
     function collectQuestionData() {
         return Array.from(document.querySelectorAll('[data-question-card]')).map((card) => {
             const type = card.querySelector('.question-type-select')?.value || 'single_answer';
+            const questionId = card.querySelector('input[name$="[id_question]"]')?.value || '';
             const content = card.querySelector('textarea[name$="[content]"]')?.value || '';
             const explanation = card.querySelector('textarea[name$="[explanation]"]')?.value || '';
 
             const options = Array.from(card.querySelectorAll('.option-row')).map((row) => ({
+                id_option: row.querySelector('input[type="hidden"][name*="[id_option]"]')?.value || '',
                 content: row.querySelector('input[type="text"]')?.value || '',
                 checked: row.querySelector('input[type="radio"], input[type="checkbox"]')?.checked || false,
             }));
@@ -993,12 +1117,16 @@
                 .filter(Boolean);
 
             return {
+                id_question: questionId,
                 type,
                 content,
                 explanation,
                 correct_option: correctOptions[0] ?? '0',
                 correct_options: correctOptions,
-                options: options.map(({ content }) => ({ content })),
+                options: options.map(({ id_option, content }) => ({
+                    id_option,
+                    content,
+                })),
             };
         });
     }
@@ -1024,100 +1152,25 @@
 
         try {
             const payload = JSON.parse(raw);
+            const questions = Array.isArray(payload.questions) ? payload.questions : [];
 
-            document.getElementById('quizTitleInput').value = payload.title ?? '';
-            document.getElementById('quizDescriptionInput').value = payload.description ?? '';
-            document.getElementById('courseSelect').value = payload.course_id ?? '';
-            document.getElementById('semesterInput').value = payload.semester ?? '';
-            document.getElementById('accessSelect').value = payload.access ?? 'private';
-            document.getElementById('visibilityInput').value = payload.visibility ?? 'draft';
-            document.getElementById('allowCopyInput').checked = !!Number(payload.allow_copy ?? 0);
-
-            const list = document.getElementById('questionsList');
-            if (list && Array.isArray(payload.questions)) {
-                list.innerHTML = payload.questions.map((q, i) => buildQuestionCard(i, q)).join('');
+            if (isEdit && questions.length > 0) {
+                const validEditDraft = questions.every((q) => q && q.id_question);
+                if (!validEditDraft) return;
             }
 
-            updateQuestionNumbers();
-            updateSummary();
-            questionIndex = getNextQuestionIndex();
-            
+            applyQuizState({
+                title: payload.title ?? '',
+                description: payload.description ?? '',
+                course_id: payload.course_id ?? '',
+                semester: payload.semester ?? '',
+                access: payload.access ?? 'private',
+                visibility: payload.visibility ?? 'draft',
+                allow_copy: !!Number(payload.allow_copy ?? 0),
+                questions: questions,
+            });
+
             markDirty();
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    function saveDraftState() {
-        const payload = {
-            title: document.getElementById('quizTitleInput')?.value || '',
-            description: document.getElementById('quizDescriptionInput')?.value || '',
-            course_id: document.getElementById('courseSelect')?.value || '',
-            semester: document.getElementById('semesterInput')?.value || '',
-            access: document.getElementById('accessSelect')?.value || 'private',
-            visibility: document.getElementById('visibilityInput')?.value || 'draft',
-            allow_copy: document.getElementById('allowCopyInput')?.checked ? 1 : 0,
-            questions: collectQuestionData(),
-        };
-
-        localStorage.setItem(draftKey, JSON.stringify(payload));
-    }
-
-    function clearDraftState() {
-        localStorage.removeItem(draftKey);
-    }
-
-    function restoreDraftState() {
-        const raw = localStorage.getItem(draftKey);
-        if (!raw) return;
-
-        try {
-            const payload = JSON.parse(raw);
-
-            const titleInput = document.getElementById('quizTitleInput');
-            const descriptionInput = document.getElementById('quizDescriptionInput');
-            const courseSelect = document.getElementById('courseSelect');
-            const semesterInput = document.getElementById('semesterInput');
-            const accessSelect = document.getElementById('accessSelect');
-            const visibilityInput = document.getElementById('visibilityInput');
-            const allowCopyInput = document.getElementById('allowCopyInput');
-            const list = document.getElementById('questionsList');
-
-            if (titleInput && payload.title !== undefined) {
-                titleInput.value = payload.title;
-            }
-
-            if (descriptionInput && payload.description !== undefined) {
-                descriptionInput.value = payload.description;
-            }
-
-            if (courseSelect && payload.course_id !== undefined) {
-                courseSelect.value = payload.course_id;
-            }
-
-            if (semesterInput && payload.semester !== undefined) {
-                semesterInput.value = payload.semester;
-            }
-
-            if (accessSelect && payload.access !== undefined) {
-                accessSelect.value = payload.access;
-            }
-
-            if (visibilityInput && payload.visibility !== undefined) {
-                visibilityInput.value = payload.visibility;
-            }
-
-            if (allowCopyInput && payload.allow_copy !== undefined) {
-                allowCopyInput.checked = !!Number(payload.allow_copy);
-            }
-
-            if (list && Array.isArray(payload.questions)) {
-                list.innerHTML = payload.questions.map((question, index) => buildQuestionCard(index, question)).join('');
-            }
-
-            updateQuestionNumbers();
-            updateSummary();
-            questionIndex = getNextQuestionIndex();
         } catch (e) {
             console.error('Invalid draft data', e);
         }
@@ -1138,108 +1191,15 @@
         return max + 1;
     }
 
-    function bindLiveSummaryFields() {
-        const fields = [
-            document.getElementById('quizTitleInput'),
-            document.getElementById('quizDescriptionInput'),
-            document.getElementById('courseSelect'),
-            document.getElementById('semesterInput'),
-            document.getElementById('accessSelect'),
-            document.getElementById('allowCopyInput'),
-            document.getElementById('visibilityInput'),
-        ].filter(Boolean);
-
-        fields.forEach((field) => {
-            field.addEventListener('input', function () {
-                updateSummary();
-                markDirty();
-            });
-
-            field.addEventListener('change', function () {
-                updateSummary();
-                markDirty();
-            });
-        });
-    }
-
-    async function submitQuizForm(visibility, destinationUrl) {
+    function submitQuizForm(visibility) {
         if (!quizForm || isSubmitting) return;
 
         setVisibility(visibility);
-        updateSummary();
         saveDraftState();
-
-        const clientErrorBox = document.getElementById('clientErrorBox');
-        const clientErrorList = document.getElementById('clientErrorList');
-
-        if (clientErrorBox && clientErrorList) {
-            clientErrorList.innerHTML = '';
-            clientErrorBox.classList.add('hidden');
-        }
-
+        skipDraftSave = true;
         isSubmitting = true;
 
-        try {
-            const formData = new FormData(quizForm);
-            formData.set('visibility', visibility);
-
-            const response = await fetch(quizForm.action, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                body: formData,
-                credentials: 'same-origin',
-            });
-
-        if (response.ok) {
-            skipDraftSave = true;
-            clearAllQuizDrafts();
-            dirty = false;
-            closeLeaveModal();
-
-            window.location.href = destinationUrl || @json(route('my-quizzes.index'));
-            return;
-        }
-
-            if (response.status === 422) {
-                const data = await response.json();
-                const errors = data.errors || {};
-
-                if (clientErrorBox && clientErrorList) {
-                    clientErrorList.innerHTML = '';
-                    Object.values(errors).flat().forEach((message) => {
-                        const li = document.createElement('li');
-                        li.textContent = message;
-                        clientErrorList.appendChild(li);
-                    });
-
-                    clientErrorBox.classList.remove('hidden');
-                    clientErrorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-
-                return;
-            }
-
-            if (clientErrorBox && clientErrorList) {
-                clientErrorList.innerHTML = '';
-                const li = document.createElement('li');
-                li.textContent = 'Failed to save quiz. Please try again.';
-                clientErrorList.appendChild(li);
-                clientErrorBox.classList.remove('hidden');
-            }
-        } catch (error) {
-            if (clientErrorBox && clientErrorList) {
-                clientErrorList.innerHTML = '';
-                const li = document.createElement('li');
-                li.textContent = 'Network error. Please try again.';
-                clientErrorList.appendChild(li);
-                clientErrorBox.classList.remove('hidden');
-            }
-        } finally {
-            isSubmitting = false;
-        }
+        quizForm.requestSubmit();
     }
 
     function shouldInterceptLink(anchor) {
@@ -1256,28 +1216,20 @@
         return true;
     }
 
-    function clearAllQuizDrafts() {
-        Object.keys(localStorage).forEach((key) => {
-            if (key.startsWith('pensquiz-quiz-draft-v3-')) {
-                localStorage.removeItem(key);
-            }
-        });
-    }
-
     document.addEventListener('click', function (event) {
         const anchor = event.target.closest('a[href]');
         if (!anchor) return;
         if (isSubmitting || !dirty) return;
 
-        const href = anchor.getAttribute('href') || '';
-        if (!href || href.startsWith('#')) return;
-
-        const url = new URL(anchor.href, window.location.origin);
-        if (url.origin !== window.location.origin) return;
+        if (!shouldInterceptLink(anchor)) return;
 
         event.preventDefault();
         openLeaveModal(anchor.href);
     }, true);
+
+    quizForm?.addEventListener('submit', function () {
+        isSubmitting = true;
+    });
 
     quizForm?.addEventListener('input', function () {
         updateSummary();
@@ -1299,11 +1251,11 @@
         if (dirty) saveDraftState();
     });
 
-    bindLiveSummaryFields();
+    clearLegacyDrafts();
 
     if (!hasServerErrors) {
         restoreDraftState();
-    } else {
+    }else {
         updateQuestionNumbers();
         updateSummary();
     }
@@ -1325,9 +1277,4 @@
 @endif
 
 
-@if(session('clearDraftKey'))
-<script>
-    localStorage.removeItem(@json(session('clearDraftKey')));
-</script>
-@endif
 </x-app-layout>
