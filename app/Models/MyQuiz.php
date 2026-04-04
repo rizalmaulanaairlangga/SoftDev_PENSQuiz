@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Course;
 
 class MyQuiz extends Model
 {
+    use SoftDeletes;
+    
     protected $table = 'quizzes';
     protected $primaryKey = 'id_quiz';
 

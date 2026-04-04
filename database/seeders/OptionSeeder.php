@@ -18,7 +18,7 @@ class OptionSeeder extends Seeder
 
         foreach ($questions as $question) {
 
-            if ($question->question_type === 'single') {
+            if ($question->question_type === 'single_answer') {
                 // 4 option, 1 benar
                 $correctIndex = rand(0,3);
 

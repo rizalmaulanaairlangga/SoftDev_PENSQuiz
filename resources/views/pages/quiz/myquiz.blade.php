@@ -118,21 +118,23 @@
                 <!-- ACTION -->
                 <div class="w-44 border-l border-gray-300 p-4 flex flex-col gap-2 justify-center">
 
-                    @if($quiz->visibility == 'draft')
-                        <a href="#"
-                        class="bg-[#104876] text-white text-center py-1.5 rounded-lg text-sm
-                                hover:bg-[#0d3a60] active:scale-[0.97] transition">
-                            Edit
-                        </a>
-                    @endif
+                    <!-- EDIT (always available) -->
+                    <a href="{{ route('my-quizzes.edit', $quiz) }}"
+                    class="bg-[#104876] text-white text-center py-1.5 rounded-lg text-sm
+                            hover:bg-[#0d3a60] active:scale-[0.97] transition">
+                        {{ $quiz->visibility === 'draft' ? 'Continue Editing' : 'Edit Quiz' }}
+                    </a>
 
+                    <!-- STATISTIC -->
                     <a href="#"
                     class="border border-gray-300 text-center py-1.5 rounded-lg text-sm
                             hover:bg-gray-100 active:scale-[0.97] transition">
                         Statistic
                     </a>
 
-                    <form action="{{ route('my-quizzes.destroy', $quiz) }}" method="POST">
+                    <!-- DELETE -->
+                    <form action="{{ route('my-quizzes.destroy', $quiz) }}" method="POST"
+                        onsubmit="return confirm('Delete this quiz permanently?')">
                         @csrf
                         @method('DELETE')
 
@@ -144,7 +146,6 @@
                     </form>
 
                 </div>
-
             </div>
 
         @endforeach
@@ -155,7 +156,7 @@
 @if(session('clearDraftKey'))
 <script>
     Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('pensquiz-quiz-draft-v3-')) {
+        if (key.startsWith('pensquiz-quiz-draft-v5-')) {
             localStorage.removeItem(key);
         }
     });
