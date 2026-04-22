@@ -1,121 +1,175 @@
 <x-guest-layout>
-    <div class="h-screen overflow-hidden bg-white flex flex-col lg:flex-row">
+    <style>
+        .auth-slide-from-left,
+        .auth-slide-from-right {
+            animation-duration: 760ms;
+            animation-fill-mode: both;
+            animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+        }
 
-        <!-- LEFT: LOGIN FORM -->
-        <section class="w-full lg:w-1/2 bg-white flex items-center justify-center px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-0">
-            <div class="w-full max-w-md lg:w-[88%]">
-                <h1 class="text-[24px] sm:text-[30px] lg:text-[36px] font-bold leading-tight mb-6">
-                    <span class="text-[#104876]">PENS</span><span class="text-[#adadad]">Quiz</span>
-                </h1>
+        .auth-slide-from-left {
+            animation-name: authSlideFromLeft;
+        }
 
-                <h2 class="text-[28px] sm:text-[36px] lg:text-[44px] font-semibold leading-[1.05] text-black mt-4 sm:mt-6 lg:mt-8">
-                    Welcome Back!
-                </h2>
+        .auth-slide-from-right {
+            animation-name: authSlideFromRight;
+        }
 
-                <p class="text-[14px] sm:text-[16px] lg:text-[18px] font-normal leading-[1.35] text-black mt-3 sm:mt-4 lg:mt-5">
-                    Continue your studies with the PENS community.<br>
-                    Log in and start today's quiz.
-                </p>
+        @keyframes authSlideFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-5rem) scale(0.985);
+            }
 
-                <form method="POST" action="{{ route('login') }}" class="w-full mt-6 sm:mt-8 lg:mt-10 space-y-4">
-                    @csrf
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
 
-                    <!-- Email -->
-                    <div class="space-y-2">
-                        <label for="email" class="block text-[16px] font-normal leading-5 text-black">
-                            Email Addres PENS
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            value="{{ old('email') }}"
-                            placeholder="1234@ds.student.pens.ac.id"
-                            required
-                            autofocus
-                            autocomplete="username"
-                            class="w-full text-[16px] font-normal leading-5 text-black placeholder:text-[#9e9696] bg-white border border-[#474242] rounded-[16px] px-5 py-3 shadow-[0px_4px_4px_rgba(136,136,136,0.25)] focus:outline-none focus:ring-2 focus:ring-[#104876] focus:border-transparent transition-all duration-300"
+        @keyframes authSlideFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(5rem) scale(0.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-slide-from-left,
+            .auth-slide-from-right {
+                animation: none;
+            }
+        }
+    </style>
+
+    <main class="min-h-screen bg-[#f8f8f6] px-4 py-4 font-sans text-[#101010] sm:px-6 lg:px-8">
+        <div class="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1600px] gap-6 lg:h-[calc(100vh-2rem)] lg:grid-cols-2 lg:gap-8">
+            <section class="auth-slide-from-right relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#fafcff_0%,#edf5ff_63%,#d4e5fb_100%)] px-6 py-7 sm:px-10 sm:py-8 lg:px-14 lg:py-8 xl:px-20">
+                <img
+                    src="{{ asset('assets/images/img_background.png') }}"
+                    alt=""
+                    class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45"
+                    aria-hidden="true"
+                >
+
+                <div class="relative z-10 flex min-h-full flex-col">
+                    <a href="{{ url('/') }}" class="inline-flex w-fit items-center gap-3 text-base font-semibold text-[#101010] transition hover:text-[#1d5687] focus:outline-none">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                        Back
+                    </a>
+
+                    <div class="mt-8 sm:mt-10 lg:mt-11">
+                        <div class="relative inline-flex">
+                            <p class="text-3xl font-extrabold leading-none tracking-normal sm:text-4xl lg:text-[42px]">
+                                <span class="text-[#1d5687]">PENS</span><span class="text-[#ffc300]">Quiz</span>
+                            </p>
+                            <span class="absolute -right-5 -top-2 text-[#ffc300]" aria-hidden="true">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="m12 2 2.1 6.4h6.7l-5.4 3.9 2.1 6.4L12 14.8l-5.5 3.9 2.1-6.4-5.4-3.9h6.7L12 2Z" />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <h1 class="mt-8 max-w-xl text-5xl font-extrabold leading-none tracking-normal text-black sm:text-6xl lg:text-[68px]">
+                            Welcome back!
+                        </h1>
+
+                        <p class="mt-5 max-w-xl text-base font-medium leading-7 text-[#101010] sm:text-lg">
+                            Continue your studies with the PENS community.<br class="hidden sm:block">
+                            Log in and start today's quiz.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('login') }}" class="mt-8 w-full max-w-xl space-y-4 sm:mt-10 lg:mt-11">
+                        @csrf
+
+                        <div>
+                            <label for="email" class="block text-base font-medium text-[#171717]">
+                                PENS Student Email Address
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                placeholder="1234@ds.student.pens.ac.id"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                class="mt-2 h-[52px] w-full rounded-[18px] border border-[#6f6b69] bg-white px-5 py-4 text-base font-medium text-black placeholder:text-[#a9a0a0] shadow-sm transition focus:border-transparent focus:outline-none focus:ring-4 focus:ring-[#1d5687]/20 sm:h-14 sm:px-6 sm:text-lg lg:h-[58px]"
+                            >
+                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <label for="password" class="block text-base font-medium text-[#171717]">
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                name="password"
+                                placeholder="123457890"
+                                required
+                                autocomplete="current-password"
+                                class="mt-2 h-[52px] w-full rounded-[18px] border border-[#6f6b69] bg-white px-5 py-4 text-base font-medium text-black placeholder:text-[#a9a0a0] shadow-sm transition focus:border-transparent focus:outline-none focus:ring-4 focus:ring-[#1d5687]/20 sm:h-14 sm:px-6 sm:text-lg lg:h-[58px]"
+                            >
+                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="flex h-14 w-full items-center justify-center rounded-full bg-[#1d5687] px-8 text-lg font-bold text-white shadow-[0_18px_40px_rgba(74,140,197,0.28)] transition hover:-translate-y-0.5 hover:bg-[#17466f] hover:shadow-[0_22px_48px_rgba(74,140,197,0.34)] focus:outline-none focus:ring-4 focus:ring-[#1d5687]/25 active:scale-[0.99] sm:text-xl lg:h-[58px]"
                         >
-                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                    </div>
+                            Login
+                        </button>
 
-                    <!-- Password -->
-                    <div class="space-y-2">
-                        <label for="password" class="block text-[16px] font-normal leading-5 text-black">
-                            Password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="123457890"
-                            required
-                            autocomplete="current-password"
-                            class="w-full text-[16px] font-normal leading-5 text-black placeholder:text-[#9e9696] bg-white border border-[#474242] rounded-[16px] px-5 py-3 shadow-[0px_4px_4px_rgba(136,136,136,0.25)] focus:outline-none focus:ring-2 focus:ring-[#104876] focus:border-transparent transition-all duration-300"
+                        <p class="text-center text-base font-medium text-[#111111]">
+                            Don't have an account yet?
+                            <a href="{{ route('register') }}" class="font-extrabold transition hover:text-[#1d5687] focus:outline-none">
+                                Sign up now.
+                            </a>
+                        </p>
+                    </form>
+                </div>
+            </section>
+
+            <section class="auth-slide-from-left relative min-h-[520px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#8fd4f0_0%,#7dc6e9_18%,#5b98d0_52%,#1f4b88_100%)] px-6 py-10 sm:px-10 lg:min-h-0 lg:px-12 lg:py-8">
+                <img
+                    src="{{ asset('assets/images/img_background.png') }}"
+                    alt=""
+                    class="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-35 mix-blend-soft-light"
+                    aria-hidden="true"
+                >
+
+                <div class="relative z-10 flex min-h-full flex-col justify-between gap-8">
+                    <div class="flex justify-center pt-4 lg:pt-10">
+                        <img
+                            src="{{ asset('assets/images/img_exam_1.png') }}"
+                            alt="Student taking an online quiz"
+                            class="w-full max-w-[360px] object-contain drop-shadow-[0_28px_40px_rgba(12,48,86,0.22)] sm:max-w-[420px] lg:max-w-[430px] xl:max-w-[500px]"
                         >
-                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
                     </div>
 
-                    <!-- Button -->
-                    <button
-                        type="submit"
-                        class="w-full text-[18px] sm:text-[20px] font-semibold leading-6 text-center text-white bg-[#104876] border border-[#474242] rounded-[16px] px-8 py-3 mt-2 shadow-[0px_4px_4px_rgba(136,136,136,0.25)] hover:bg-[#0d3a5f] hover:shadow-lg active:scale-[0.99] transition-all duration-300"
-                    >
-                        Login
-                    </button>
-
-                    <!-- Link -->
-                    <p class="text-[15px] font-normal leading-5 text-center text-black mt-4 sm:mt-5 lg:mt-6">
-                        <span>Don't have an account yet? </span>
-                        <a href="{{ route('register') }}" class="font-bold hover:text-[#104876] transition-colors duration-300">
-                            Sign up now
-                        </a>
-                    </p>
-                </form>
-            </div>
-        </section>
-
-        <!-- RIGHT: ILLUSTRATION / PROMO -->
-        <section class="w-full lg:w-1/2 bg-[#eaeaea] lg:rounded-l-[20px] flex flex-col justify-start items-center px-4 sm:px-6 lg:px-9 py-10 sm:py-14 lg:py-24 min-h-[500px] lg:min-h-screen mt-4 lg:mt-0">
-            <div class="w-full max-w-3xl flex flex-col items-center lg:items-start">
-                <div class="w-full lg:w-[86%] flex flex-col gap-4 sm:gap-5 lg:gap-7 items-center lg:items-start">
-                    <h2 class="text-[28px] sm:text-[36px] lg:text-[44px] font-semibold leading-tight text-black text-left">
-                        Learn smarter,<br>starting here.
-                    </h2>
-
-                    <p class="text-[14px] sm:text-[16px] lg:text-[18px] font-normal leading-6 text-black text-left max-w-xl">
-                        PENSQuiz helps you sharpen your understanding through interactive quizzes — anytime, anywhere.
-                    </p>
-                </div>
-
-                <div class="relative w-full lg:w-[92%] h-[180px] sm:h-[240px] lg:h-[300px] mt-6 sm:mt-8 lg:mt-10">
-                    <!-- Blue background card -->
-                    <div class="absolute w-[66%] min-w-[220px] bg-[#104876] border border-white rounded-[16px] shadow-[0px_4px_4px_rgba(136,136,136,0.25)] top-[32%] left-[18%] sm:top-[35%] sm:left-[24%] lg:top-[28%] lg:left-[24%] px-5 sm:px-7 lg:px-10 py-8 sm:py-12 lg:py-16">
-                        <p class="text-[20px] font-normal leading-6 text-center text-[#eaeaea]">
-                            [Ilustrasi]
-                        </p>
-                    </div>
-
-                    <!-- Top-left card -->
-                    <div class="absolute w-[160px] sm:w-[180px] lg:w-[200px] bg-white border border-[#474242] rounded-[16px] shadow-[0px_4px_4px_rgba(136,136,136,0.25)] top-0 left-0 px-7 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14 z-20">
-                        <p class="text-[18px] sm:text-[20px] font-normal leading-6 text-center text-[#104876]">
-                            [Ilustrasi]
-                        </p>
-                    </div>
-
-                    <!-- Bottom-right card -->
-                    <div class="absolute w-[160px] sm:w-[180px] lg:w-[200px] bg-white border border-[#474242] rounded-[16px] shadow-[0px_4px_4px_rgba(136,136,136,0.25)] bottom-0 right-0 px-7 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14 z-20">
-                        <p class="text-[18px] sm:text-[20px] font-normal leading-6 text-center text-[#104876]">
-                            [Ilustrasi]
+                    <div class="pb-2 sm:pb-6 lg:pb-8 xl:pb-10">
+                        <h2 class="max-w-3xl text-3xl font-extrabold leading-tight tracking-normal text-white sm:text-4xl lg:text-[32px] xl:text-[36px]">
+                            Learn smarter, starting here.
+                        </h2>
+                        <p class="mt-3 max-w-2xl text-base font-medium leading-7 text-white sm:text-lg lg:text-base xl:text-lg">
+                            Hone your knowledge, measure your abilities.<br class="hidden sm:block">
+                            From PENS students, for PENS students.
                         </p>
                     </div>
                 </div>
-
-                <p class="text-[16px] self-center font-medium leading-5 text-center text-black mt-4 sm:mt-5 lg:mt-7 max-w-md lg:max-w-none">
-                    Hone your knowledge, measure your abilities.<br>
-                    From students, for PENS students.
-                </p>
-            </div>
-        </section>
-    </div>
+            </section>
+        </div>
+    </main>
 </x-guest-layout>
