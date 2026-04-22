@@ -14,7 +14,7 @@
             [
                 'title' => 'See Courses',
                 'image' => 'img_image_3.png',
-                'href' => '#features',
+                'href' => route('login'),
             ],
         ];
 
@@ -104,6 +104,10 @@
             animation-direction: alternate;
             animation-timing-function: linear;
             will-change: transform;
+        }
+
+        .landing-review-track:hover {
+            animation-play-state: paused;
         }
 
         .landing-review-set {
@@ -268,8 +272,8 @@
                         See what your fellow students are saying about their learning journey with
                         <span class="font-extrabold">PENS<span class="text-[#fdc02a]">Quiz</span></span>
                     </p>
-                    <a href="{{ route('register') }}" class="mt-8 inline-flex rounded-full bg-[#17426a] px-8 py-3.5 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#123557] focus:outline-none focus:ring-4 focus:ring-[#17426a]/25">
-                        Join Now
+                    <a href="{{ route('register') }}" class="landing-login-button mt-8 inline-flex min-w-40 justify-center rounded-full px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-900/10 focus:outline-none focus:ring-4 focus:ring-[#17426a]/25">
+                        <span>Join Now</span>
                     </a>
                 </div>
 
