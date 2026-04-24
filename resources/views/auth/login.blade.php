@@ -67,16 +67,7 @@
                     </a>
 
                     <div class="mt-8 sm:mt-10 lg:mt-11">
-                        <div class="relative inline-flex">
-                            <p class="text-3xl font-extrabold leading-none tracking-normal sm:text-4xl lg:text-[42px]">
-                                <span class="text-[#1d5687]">PENS</span><span class="text-[#ffc300]">Quiz</span>
-                            </p>
-                            <span class="absolute -right-5 -top-2 text-[#ffc300]" aria-hidden="true">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="m12 2 2.1 6.4h6.7l-5.4 3.9 2.1 6.4L12 14.8l-5.5 3.9 2.1-6.4-5.4-3.9h6.7L12 2Z" />
-                                </svg>
-                            </span>
-                        </div>
+                        <x-brand-logo href="{{ url('/') }}" ariaLabel="PENSQuiz home" class="w-[154px] sm:w-[176px]" />
 
                         <h1 class="mt-8 max-w-xl text-5xl font-extrabold leading-none tracking-normal text-black sm:text-6xl lg:text-[68px]">
                             Welcome back!

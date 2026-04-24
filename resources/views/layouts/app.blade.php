@@ -15,41 +15,17 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased bg-gray-100">
+<body class="min-h-screen bg-[#eaf2f8] font-sans antialiased text-slate-900">
+    <div class="flex min-h-screen flex-col">
+        <x-auth-top-nav />
 
-    <div class="">
-        {{-- pb-20 penting untuk kasih ruang bottom nav --}}
-
-        <div class="flex gap-4 p-4">
-
-            <!-- Sidebar -->
-            <x-sidebar />
-
-            <!-- Content -->
-            <div class="flex-1 md:ml-24 min-h-screen bg-[#f5f5f5]">
-
-                <div class="w-full px-4 sm:px-6 lg:px-6 pt-4">
-
-                    <!-- HEADER -->
-                    <x-app-header />
-
-                    <!-- CONTENT -->
-                    <div class="mx-auto w-full max-w-[1600px] mt-4">
-                        {{ $slot }}
-                    </div>
-
-                </div>
-
+        <main class="flex-1 px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+            <div class="mx-auto w-full max-w-7xl">
+                {{ $slot }}
             </div>
+        </main>
 
-        </div>
-
-        <!-- Bottom Navigation -->
-        <div class="mb-20 md:p-0">
-            <x-bottom-nav />
-        </div>
-
+        <x-site-footer />
     </div>
-
 </body>
 </html>
