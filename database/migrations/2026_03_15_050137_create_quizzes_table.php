@@ -18,6 +18,8 @@ return new class extends Migration
 
             $table->string('title');
             $table->text('description')->nullable();
+            
+            $table->integer('time_limit_minutes')->nullable();
 
             $table->foreignId('major_id')->nullable()->constrained('majors','id_major')->nullOnDelete();
             $table->foreignId('course_id')->nullable()->constrained('courses','id_course')->nullOnDelete();
@@ -35,6 +37,7 @@ return new class extends Migration
             $table->boolean('has_been_updated')->default(false);
 
             $table->string('cover_image_url',1024)->nullable();
+
 
             $table->timestamps();
             $table->softDeletes();

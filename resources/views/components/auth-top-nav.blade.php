@@ -1,7 +1,7 @@
 @php
     $user = auth()->user();
-    $userHandle = $user?->username ?: $user?->nrp ?: 'user';
-    $userLabel = $user?->full_name ?: 'User';
+    $userHandle = $user?->email ? explode('@', $user->email)[0] : 'user';
+    $userLabel = $user?->fullName ?: 'User';
     $userInitial = strtoupper(substr($userLabel, 0, 1));
 @endphp
 
@@ -54,7 +54,7 @@
     }
 </style>
 
-<header class="px-5 pt-4 sm:px-8 lg:px-10 lg:pt-5">
+<header class="sticky top-0 z-50 px-5 pt-4 sm:px-8 lg:px-10 lg:pt-5 pb-2">
     <div class="mx-auto max-w-7xl rounded-[28px] bg-[linear-gradient(145deg,#a8dbf1_0%,#79b7dc_52%,#4b87b2_100%)] shadow-[0_16px_40px_rgba(21,65,107,0.14)]">
         <div class="flex items-center justify-between gap-6 px-6 py-5 sm:px-8 lg:px-10">
             <x-brand-logo href="{{ route('dashboard') }}" ariaLabel="PENSQuiz dashboard" class="w-[148px] sm:w-[176px] lg:w-[194px]" />
@@ -62,7 +62,6 @@
             <nav class="hidden items-center gap-10 text-base font-semibold text-white md:flex" aria-label="Primary navigation">
                 <a href="{{ route('dashboard') }}" class="site-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : 'text-white/80' }} transition hover:text-[#fdc02a] focus:outline-none">Dashboard</a>
                 <a href="{{ route('quizzes.index') }}" class="site-nav-link {{ request()->routeIs('quizzes.*') ? 'is-active' : 'text-white/80' }} transition hover:text-[#fdc02a] focus:outline-none">Quizzes</a>
-                <button type="button" class="site-nav-link text-white/80 transition hover:text-[#fdc02a] focus:outline-none">Courses</button>
                 <details class="site-user-menu relative">
                     <summary class="site-nav-link {{ request()->routeIs('my-quizzes.*') ? 'is-active' : 'text-white/80' }} flex cursor-pointer list-none items-center gap-2 transition hover:text-[#fdc02a] focus:outline-none">
                         My Quizzes
@@ -80,7 +79,7 @@
                         </a>
                         <a href="{{ route('my-quizzes.create') }}" class="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none">
                             <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M4 4h10l6 6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v16h14V10h-5V6H4Zm7 3h2v3h3v2h-3v3h-2v-3H8v-2h3V9Z" />
+                                <path d="M4 4h10l6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v16h14V10h-5V6H4Zm7 3h2v3h3v2h-3v3h-2v-3H8v-2h3V9Z" />
                             </svg>
                             Create a Quiz
                         </a>
@@ -95,7 +94,7 @@
                     </div>
                     <div class="hidden text-left md:block">
                         <p class="text-base font-bold leading-none">{{ $userLabel }}</p>
-                        <p class="mt-1 text-sm font-semibold text-white/80">&#64;{{ $userHandle }}</p>
+                        <p class="mt-1 text-sm font-semibold text-white/80">&#64;{{ auth()->user()->username }}</p>
                     </div>
                     <svg class="h-5 w-5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="m6 9 6 6 6-6" />
@@ -105,7 +104,7 @@
                 <div class="absolute right-0 top-[calc(100%+0.85rem)] z-50 min-w-[220px] rounded-2xl border border-slate-200/80 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
                     <div class="rounded-xl px-4 py-3">
                         <p class="text-sm font-bold text-slate-900">{{ $userLabel }}</p>
-                        <p class="mt-1 text-sm font-medium text-slate-500">&#64;{{ $userHandle }}</p>
+                        <p class="mt-1 text-sm font-medium text-slate-500">&#64;{{ auth()->user()->username }}</p>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

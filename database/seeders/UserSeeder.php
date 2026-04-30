@@ -11,9 +11,9 @@ class UserSeeder extends Seeder
     {
         DB::table('users')->insert([
             [
-                'nrp' => '312310001',
-                'username' => 'Rrrizal',
-                'full_name' => 'Rizal Maulana',
+                'first_name' => 'Rizal',
+                'last_name' => 'Maulana',
+                'username' => 'rizalmln',
                 'email' => 'rizal@student.pens.ac.id',
                 'password' => Hash::make('password'),
                 'major_id' => 1,
@@ -23,9 +23,9 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'nrp' => '312310002',
-                'username' => 'andikun',
-                'full_name' => 'Andi Saputra',
+                'first_name' => 'Andi',
+                'last_name' => 'Saputra',
+                'username' => 'andisap',
                 'email' => 'andi@student.pens.ac.id',
                 'password' => Hash::make('password'),
                 'major_id' => 2,

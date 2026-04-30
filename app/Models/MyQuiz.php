@@ -50,4 +50,24 @@ class MyQuiz extends Model
     {
         return $this->belongsTo(Course::class, 'course_id', 'id_course');
     }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'quiz_tags', 'quiz_id', 'tag_id');
+    }
+
+    public function lecturer()
+    {
+        return $this->belongsTo(Lecturer::class, 'lecturer_id', 'id_lecturer');
+    }
+
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id', 'id_user');
+    }
+
+    public function major()
+    {
+        return $this->belongsTo(Major::class, 'major_id', 'id_major');
+    }
 }
