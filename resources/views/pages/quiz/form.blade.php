@@ -126,6 +126,19 @@
                                 @error('description') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-gray-800">Tags (comma separated)</label>
+                                <input
+                                    id="tagsInput"
+                                    name="tags"
+                                    type="text"
+                                    value="{{ old('tags', $tagsString ?? '') }}"
+                                    placeholder="coding, web, laravel"
+                                    class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
+                                >
+                                @error('tags') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
+                            </div>
+
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <label class="mb-2 block text-sm font-semibold text-gray-800">Course</label>

@@ -6,6 +6,7 @@ use App\Models\Attempt;
 use App\Models\Course;
 use App\Models\MyQuiz;
 use App\Models\Question;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,8 +71,9 @@ class MyQuizController extends Controller
 
         $courses = Course::orderBy('name')->get();
         $formQuestions = $this->defaultFormQuestions();
+        $tagsString = '';
 
-        return view('pages.quiz.form', compact('quiz', 'courses', 'formQuestions'));
+        return view('pages.quiz.form', compact('quiz', 'courses', 'formQuestions', 'tagsString'));
     }
 
     public function store(Request $request)
@@ -113,6 +115,7 @@ class MyQuizController extends Controller
             ]);
 
             $this->syncQuestions($quiz, $normalizedQuestions);
+            $this->syncTags($quiz, $request->input('tags', ''));
         });
 
         return redirect()
@@ -125,15 +128,17 @@ class MyQuizController extends Controller
     {
         abort_unless($myquiz->author_id === Auth::id(), 403);
 
-        $myquiz->load(['course', 'questions.options']);
+        $myquiz->load(['course', 'questions.options', 'tags']);
 
         $courses = Course::orderBy('name')->get();
         $formQuestions = $this->questionsFromQuiz($myquiz);
+        $tagsString = $myquiz->tags->pluck('name')->implode(', ');
 
         return view('pages.quiz.form', [
             'quiz' => $myquiz,
             'courses' => $courses,
             'formQuestions' => $formQuestions,
+            'tagsString' => $tagsString,
         ]);
     }
 
@@ -187,6 +192,7 @@ class MyQuizController extends Controller
             ]);
 
             $this->syncQuestions($myquiz, $normalizedQuestions);
+            $this->syncTags($myquiz, $request->input('tags', ''));
         });
 
         return redirect()
@@ -221,6 +227,7 @@ class MyQuizController extends Controller
 
             'cover_image' => ['nullable', 'image', 'max:4096'],
             'remove_cover' => ['nullable', 'boolean'],
+            'tags' => ['nullable', 'string', 'max:255'],
         ]);
     }
 
@@ -448,5 +455,19 @@ class MyQuizController extends Controller
                 ],
             ],
         ];
+    }
+
+    private function syncTags(MyQuiz $quiz, string $tagsString): void
+    {
+        $tags = collect(explode(',', $tagsString))
+            ->map(fn($tag) => trim($tag))
+            ->filter(fn($tag) => $tag !== '')
+            ->unique();
+
+        $tagIds = $tags->map(function ($tagName) {
+            return Tag::firstOrCreate(['name' => $tagName])->id_tag;
+        });
+
+        $quiz->tags()->sync($tagIds);
     }
 }

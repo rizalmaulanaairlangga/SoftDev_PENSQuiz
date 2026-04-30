@@ -42,6 +42,7 @@ class AttemptController extends Controller
             'quiz_id' => $id,
             'snapshot_id' => $snapshot->id_snapshot,
             'started_at' => now(),
+            'duration_seconds' => 0,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -56,7 +57,9 @@ class AttemptController extends Controller
     public function play($id)
     {
         $attempt = DB::table('attempts')
+            ->join('quizzes', 'attempts.quiz_id', '=', 'quizzes.id_quiz')
             ->where('id_attempt', $id)
+            ->select('attempts.*', 'quizzes.time_limit_minutes')
             ->first();
 
         if (!$attempt) abort(404);
@@ -113,7 +116,14 @@ class AttemptController extends Controller
             'question_id' => 'required|exists:snapshot_questions,id_snapshot_question',
             'option_ids' => 'required|array',
             'option_ids.*' => 'exists:snapshot_options,id_snapshot_option',
+            'duration_seconds' => 'nullable|integer'
         ]);
+
+        if ($request->filled('duration_seconds')) {
+            DB::table('attempts')
+                ->where('id_attempt', $request->attempt_id)
+                ->update(['duration_seconds' => $request->duration_seconds]);
+        }
 
         DB::beginTransaction();
 
@@ -165,6 +175,7 @@ class AttemptController extends Controller
         $request->validate([
             'attempt_id' => 'required|exists:attempts,id_attempt',
             'action' => 'required|in:save,discard',
+            'duration_seconds' => 'nullable|integer'
         ]);
 
         $attempt = DB::table('attempts')
@@ -176,11 +187,45 @@ class AttemptController extends Controller
             return response()->json(['ok' => false, 'message' => 'Attempt not found'], 404);
         }
 
+        if ($request->action === 'save' && $request->filled('duration_seconds')) {
+            DB::table('attempts')
+                ->where('id_attempt', $attempt->id_attempt)
+                ->update(['duration_seconds' => $request->duration_seconds]);
+        }
+
         if ($request->action === 'discard') {
             DB::table('attempts')
                 ->where('id_attempt', $attempt->id_attempt)
                 ->delete();
         }
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function submit(Request $request)
+    {
+        $request->validate([
+            'attempt_id' => 'required|exists:attempts,id_attempt',
+            'duration_seconds' => 'nullable|integer'
+        ]);
+
+        $attempt = DB::table('attempts')
+            ->where('id_attempt', $request->attempt_id)
+            ->where('user_id', Auth::user()->id_user)
+            ->first();
+
+        if (!$attempt) {
+            return response()->json(['ok' => false, 'message' => 'Attempt not found'], 404);
+        }
+
+        $updateData = ['submitted_at' => now()];
+        if ($request->filled('duration_seconds')) {
+            $updateData['duration_seconds'] = $request->duration_seconds;
+        }
+
+        DB::table('attempts')
+            ->where('id_attempt', $attempt->id_attempt)
+            ->update($updateData);
 
         return response()->json(['ok' => true]);
     }

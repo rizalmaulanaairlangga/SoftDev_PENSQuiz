@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\MyQuiz;
+use App\Models\Tag;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,15 +15,14 @@ class QuizSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // ambil 2 user pertama
+        // ambil user pertama yang ada
         $users = DB::table('users')
             ->orderBy('id_user')
-            ->limit(2)
             ->pluck('id_user')
             ->toArray();
 
-        if (count($users) < 2) {
-            throw new \Exception('Minimal harus ada 2 user untuk QuizSeeder');
+        if (empty($users)) {
+            throw new \Exception('Harus ada user untuk QuizSeeder');
         }
 
         // ambil reference data (ambil random nanti)
@@ -32,58 +33,61 @@ class QuizSeeder extends Seeder
         $classIds = DB::table('classes')->pluck('id_class')->toArray();
 
         $titles = [
-            'Quiz Laravel Dasar',
-            'Pemrograman Web Lanjut',
-            'Struktur Data Quiz',
-            'Database Design Basics',
-            'Algoritma & Kompleksitas',
-            'Frontend Development',
-            'Backend API Design',
-            'OOP Concept Quiz',
-            'Software Engineering',
-            'Fullstack Challenge'
+            'Quiz Laravel Dasar', 'Pemrograman Web Lanjut', 'Struktur Data Quiz', 'Database Design Basics',
+            'Algoritma & Kompleksitas', 'Frontend Development', 'Backend API Design', 'OOP Concept Quiz',
+            'Software Engineering', 'Fullstack Challenge', 'Networking Essentials', 'Cyber Security Intro',
+            'Mobile App Development', 'UI/UX Design Principles', 'Cloud Computing Basics', 'Artificial Intelligence',
+            'Machine Learning 101', 'Data Science Methods', 'Project Management', 'Human Computer Interaction',
+            'Introduction to Python', 'JavaScript Mastery', 'React.js Deep Dive', 'Vue.js Basics',
+            'Node.js Essentials', 'Go Programming', 'Rust for Systems', 'C++ Advanced',
+            'SQL Optimization', 'NoSQL Databases', 'Docker & Kubernetes', 'AWS Fundamentals',
+            'Azure Solutions', 'Google Cloud Platform', 'Microservices Architecture', 'System Design',
+            'Cryptography Basics', 'Ethical Hacking', 'Digital Forensics', 'Computer Vision',
+            'Natural Language Processing', 'Robotics Intro', 'Blockchain Essentials', 'IoT Foundations',
+            'Embedded Systems', 'Compilers & Interpreters', 'Operating Systems', 'Computer Graphics',
+            'Game Development Basics', 'VR & AR Intro'
         ];
 
-        $quizzes = [];
+        $tagPool = ['coding', 'web', 'database', 'design', 'security', 'network', 'ai', 'cloud', 'mobile', 'devops', 'backend', 'frontend', 'data', 'architecture'];
 
-        $baseDate = now()->subDays(10);
+        $baseDate = now()->subDays(60);
 
-        for ($i = 0; $i < 10; $i++) {
-
+        foreach ($titles as $index => $title) {
             $createdAt = $baseDate->copy()
-                ->addDays($i)
-                ->setTime(rand(8, 22), rand(0, 59), rand(0, 59)); // jam random
+                ->addDays($index)
+                ->setTime(rand(8, 22), rand(0, 59), rand(0, 59));
 
-            $quizzes[] = [
-                'author_id' => $users[$i % 2],
-
-                'title' => $titles[$i],
-                'description' => 'Quiz tentang ' . $titles[$i],
-
+            $quiz = MyQuiz::create([
+                'author_id' => $users[array_rand($users)],
+                'title' => $title,
+                'description' => 'A comprehensive quiz exploring ' . $title . '. Test your knowledge on core concepts and advanced topics with our curated questions.',
                 'major_id' => $this->randomOrNull($majorIds),
                 'course_id' => $this->randomOrNull($courseIds),
                 'lecturer_id' => $this->randomOrNull($lecturerIds),
                 'academic_year_id' => $this->randomOrNull($yearIds),
                 'class_id' => $this->randomOrNull($classIds),
-
                 'semester' => rand(1, 8),
-
-                'visibility' => rand(0, 1) ? 'draft' : 'published',
-                'access' => rand(0, 1) ? 'public' : 'private',
-
-                'allow_copy' => rand(0, 1),
+                'time_limit_minutes' => rand(1, 10) > 3 ? [15, 30, 45, 60, 90][array_rand([15, 30, 45, 60, 90])] : null,
+                'visibility' => 'published',
+                'access' => 'public',
+                'allow_copy' => (bool)rand(0, 1),
                 'version_number' => 1,
                 'has_been_updated' => false,
-
                 'cover_image_url' => null,
-
-                // ✅ FIX UTAMA
                 'created_at' => $createdAt,
-                'updated_at' => $createdAt->copy()->addMinutes(rand(10, 180)),
-            ];
+                'updated_at' => $createdAt,
+            ]);
+            
+            // Sync 2-4 random tags
+            $randomTagKeys = array_rand(array_flip($tagPool), rand(2, 4));
+            $randomTags = is_array($randomTagKeys) ? $randomTagKeys : [$randomTagKeys];
+            
+            $tagIds = [];
+            foreach ($randomTags as $tagName) {
+                $tagIds[] = Tag::firstOrCreate(['name' => $tagName])->id_tag;
+            }
+            $quiz->tags()->sync($tagIds);
         }
-
-        DB::table('quizzes')->insert($quizzes);
     }
 
     private function randomOrNull(array $data)

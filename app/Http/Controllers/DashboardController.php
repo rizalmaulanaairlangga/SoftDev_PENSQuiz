@@ -78,6 +78,21 @@ class DashboardController extends Controller
             $chartData[] = $rawData[$i] ?? 0;
         }
 
+        /**
+         * =========================
+         * RECENTLY OPENED QUIZZES
+         * =========================
+         */
+        $recentlyOpened = \App\Models\MyQuiz::query()
+            ->join('quiz_histories', 'quizzes.id_quiz', '=', 'quiz_histories.quiz_id')
+            ->where('quiz_histories.user_id', $userId)
+            ->with(['course', 'tags', 'lecturer', 'author', 'major'])
+            ->withCount('questions')
+            ->select('quizzes.*', 'quiz_histories.last_opened_at')
+            ->orderByDesc('quiz_histories.last_opened_at')
+            ->limit(5)
+            ->get();
+
         return view('pages.dashboard.index', [
             'quizCount' => $quizCount,
             'questionCount' => $questionCount,
@@ -87,6 +102,9 @@ class DashboardController extends Controller
 
             // chart
             'chartData' => $chartData,
+            
+            // recently opened
+            'recentlyOpened' => $recentlyOpened,
         ]);
     }
 }

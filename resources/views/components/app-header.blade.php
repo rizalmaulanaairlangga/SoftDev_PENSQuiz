@@ -37,16 +37,16 @@
             <!-- TEXT -->
             <div class="hidden sm:flex flex-col text-right min-w-0">
                 <div class="truncate text-[16px] font-medium">
-                    {{ auth()->user()->full_name }}
+                    {{ auth()->user()->fullName }}
                 </div>
                 <div class="truncate text-[14px] text-black/70">
-                    {{ auth()->user()->nrp }}
+                    {{ auth()->user()->email }}
                 </div>
             </div>
 
             <!-- AVATAR -->
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#e6ec6a] text-[20px]">
-                {{ strtoupper(substr(auth()->user()->full_name ?? 'U', 0, 1)) }}
+                {{ strtoupper(substr(auth()->user()->fullName ?? 'U', 0, 1)) }}
             </div>
         </div>
 

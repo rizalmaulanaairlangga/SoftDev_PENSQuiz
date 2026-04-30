@@ -12,9 +12,10 @@ return new class extends Migration
 
             $table->id('id_user');
 
-            $table->string('nrp',50)->unique();
-            $table->string('username',100)->unique();
-            $table->string('full_name',255);
+
+            $table->string('first_name', 100);
+            $table->string('last_name', 100)->nullable();
+            $table->string('username', 50)->unique();
 
             $table->string('email',255)->unique();
             $table->string('password',255);

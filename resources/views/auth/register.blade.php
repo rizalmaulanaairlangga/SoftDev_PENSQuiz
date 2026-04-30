@@ -113,39 +113,39 @@
 
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label for="full_name" class="block text-sm font-medium text-[#171717]">
-                                Full Name
+                            <label for="first_name" class="block text-sm font-medium text-[#171717]">
+                                First Name
                             </label>
                             <input
-                                id="full_name"
+                                id="first_name"
                                 type="text"
-                                name="full_name"
-                                value="{{ old('full_name') }}"
-                                placeholder="John Doe"
+                                name="first_name"
+                                value="{{ old('first_name') }}"
+                                placeholder="John"
                                 required
-                                autocomplete="name"
+                                autofocus
                                 class="mt-2 h-12 w-full rounded-[16px] border border-[#6f6b69] bg-white px-5 text-base font-medium text-black placeholder:text-[#a9a0a0] shadow-sm transition focus:border-transparent focus:outline-none focus:ring-4 focus:ring-[#1d5687]/20"
                             >
-                            <x-input-error :messages="$errors->get('full_name')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
                         </div>
 
                         <div>
-                            <label for="nrp" class="block text-sm font-medium text-[#171717]">
-                                NRP
+                            <label for="last_name" class="block text-sm font-medium text-[#171717]">
+                                Last Name
                             </label>
                             <input
-                                id="nrp"
+                                id="last_name"
                                 type="text"
-                                name="nrp"
-                                value="{{ old('nrp') }}"
-                                placeholder="1234567890"
-                                required
-                                autocomplete="username"
+                                name="last_name"
+                                value="{{ old('last_name') }}"
+                                placeholder="Doe"
                                 class="mt-2 h-12 w-full rounded-[16px] border border-[#6f6b69] bg-white px-5 text-base font-medium text-black placeholder:text-[#a9a0a0] shadow-sm transition focus:border-transparent focus:outline-none focus:ring-4 focus:ring-[#1d5687]/20"
                             >
-                            <x-input-error :messages="$errors->get('nrp')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                         </div>
                     </div>
+
+
 
                     <div>
                         <label for="email" class="block text-sm font-medium text-[#171717]">

@@ -1,59 +1,160 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PENSQuiz
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**PENSQuiz** adalah aplikasi kuis daring yang dibangun dengan **Laravel 8**, Blade, Tailwind CSS, dan vanilla JavaScript. Aplikasi ini menyediakan alur kuis “SPA‑like” (tanpa reload halaman) yang meliputi **Play**, **Check**, **Sure‑Submit**, **Result**, **Review‑Grid**, dan **Review‑Detail**. Semua logika pemilihan jawaban, timer, dan penyimpanan berlangsung secara asinkron melalui API Laravel.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📂 Struktur Proyek
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```
+pensquiz/
+├─ app/                     # Kode bisnis Laravel (Controller, Model, Service)
+│   └─ Http/Controllers/
+│        └─ AttemptController.php
+├─ resources/
+│   ├─ views/
+│   │   ├─ pages/
+│   │   │   ├─ quiz/
+│   │   │   │   └─ show.blade.php         # Tampilan daftar kuis
+│   │   │   └─ attempt/
+│   │   │       └─ play.blade.php         # Alur kuis lengkap (play‑check‑…‑review)
+│   │   └─ components/
+│   │       └─ auth-top-nav.blade.php    # Header navigasi
+│   └─ css/
+│       └─ app.css                       # Tailwind + custom utilities
+├─ public/
+│   └─ ...                               # Asset statis, manifest, dll.
+├─ routes/
+│   └─ web.php                           # Definisi route (quiz, attempt, dll.)
+├─ database/
+│   └─ migrations/                       # Skema DB (quiz, question, attempt, …)
+├─ package.json                            # NPM scripts (Vite, Tailwind)
+├─ composer.json                           # Dependensi PHP
+└─ README.md                               # ← Anda sedang membacanya
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+> **Catatan:** Semua UI berada di dalam satu Blade file (`play.blade.php`) dan dikelola oleh satu state manager JavaScript, sehingga tidak ada alert browser atau reload halaman.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🚀 Panduan Memulai (Getting Started)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Prasyarat
+Pastikan sistem Anda telah terpasang:
 
-## Laravel Sponsors
+| Tool | Versi (rekomendasi) |
+|------|---------------------|
+| **PHP** | `8.2` atau lebih tinggi |
+| **Composer** | `2.x` |
+| **Node.js** | `18.x` atau lebih tinggi |
+| **npm** | `9.x` |
+| **Laravel Installer** | `8.x` (opsional) |
+| **Git** | `2.x` |
+| **Database** | MySQL 8 / MariaDB 10.6 (atau SQLite untuk dev cepat) |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Clone & Install Dependensi
 
-### Premium Partners
+```bash
+# Clone repository
+git clone https://github.com/your-org/pensquiz.git
+cd pensquiz
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Install paket PHP
+composer install
 
-## Contributing
+# Salin file .env contoh & sesuaikan (DB, APP_KEY, dll.)
+cp .env.example .env
+php artisan key:generate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Install paket Node & compile assets
+npm ci               # atau `npm install`
+npm run dev          # jalankan Vite (hot‑reloading) selama development
+```
 
-## Code of Conduct
+### 3. Migrasi & Seed Database (opsional)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan migrate          # membuat tabel
+php artisan db:seed          # (jika ada data contoh) 
+```
 
-## Security Vulnerabilities
+### 4. Jalankan Server Development
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+# Laravel development server
+php artisan serve
 
-## License
+# Vite dev server (otomatis dijalankan oleh `npm run dev`)
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Buka browser dan kunjungi `http://127.0.0.1:8000`. Anda akan melihat halaman daftar kuis, kemudian dapat memulai alur **Play → Check → Sure‑Submit → Result → Review**.
+
+---
+
+## 🛠️ Pengembangan Lanjutan
+
+| Area | Penjelasan | Lokasi File |
+|------|------------|-------------|
+| **Alur Kuiz (JS)** | State manager, render‑quiz, render‑review, timer | `resources/views/pages/attempt/play.blade.php` (script di bagian bawah) |
+| **Routing** | Route resource untuk quiz & attempt | `routes/web.php` |
+| **Controller** | Logika penyimpanan jawaban, submit, fetch‑attempt | `app/Http/Controllers/AttemptController.php` |
+| **Styling** | Tailwind + custom gradient, warna status (benar = green, salah = red) | `resources/css/app.css` (atau `tailwind.config.js`) |
+| **Model & Migration** | `Quiz`, `Question`, `Option`, `Attempt`, `Answer` | `app/Models/…` & `database/migrations/…` |
+
+> **Tip:** Karena UI berada dalam satu file Blade, gunakan `view‑source` di browser bila ingin memeriksa markup yang di‑render.
+
+---
+
+## 📋 Aturan Kontribusi & Changelog
+
+1. **Fork** repository, buat branch fitur (`feature/...`) atau perbaikan (`fix/...`).
+2. **Commit** dengan format **Conventional Commits**:  
+   - `feat: tambahkan alur review`  
+   - `fix: perbaiki batas jawaban multiple`  
+   - `docs: perbarui README`  
+   - `style: rapikan Tailwind class`  
+   - `refactor: ubah logika timer`  
+3. **Pull Request**: deskripsikan perubahan, lampirkan screenshot bila UI berubah.
+4. **Changelog**: setiap PR yang masuk akan secara otomatis ditambahkan ke `CHANGELOG.md` oleh skrip CI (jika di‑setup). Pastikan setiap entry mengikuti format di atas.
+
+---
+
+## 📦 Build & Deploy (opsional)
+
+```bash
+# Optimasi assets untuk production
+npm run build          # Vite menghasilkan bundle minified di public/build
+
+# Cache config, queue worker, dll.
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+Deploy ke server LAMP/NGINX standar dengan `DocumentRoot` mengarah ke `public/`. Pastikan `.env` berisi `APP_ENV=production` dan `APP_DEBUG=false`.
+
+---
+
+## 🧪 Testing (jika tersedia)
+
+Proyek belum memiliki suite unit/feature test lengkap, namun Anda dapat menambahkan:
+
+```bash
+# Unit test (PHPUnit)
+php artisan test
+
+# Browser test (Laravel Dusk) – bila Dusk di‑install
+php artisan dusk
+```
+
+---
+
+## 📄 Lisensi
+
+PENSQuiz dilisensikan di bawah **MIT License** – lihat file `LICENSE` untuk detail lengkap.
+
+---
+
+### 🎉 Selamat mencoba!
+
+Jika ada pertanyaan atau kesulitan, buka *issue* di GitHub atau hubungi tim pengembang melalui Slack/Discord. Happy coding!

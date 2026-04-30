@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/attempt/save-answer', [AttemptController::class, 'saveAnswer'])->name('attempt.saveAnswer');
     Route::post('/attempt/exit', [AttemptController::class, 'exit'])->name('attempt.exit');
+    Route::post('/attempt/submit', [AttemptController::class, 'submit'])->name('attempt.submit');
 
     
     Route::get('/my-quizzes', [MyQuizController::class, 'index'])
@@ -57,8 +58,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Route::get('/history', [AttemptController::class, 'history']);
 
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Route::get('/history', [AttemptController::class, 'history']);
 });
