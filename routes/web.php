@@ -43,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::delete('/my-quizzes/{myquiz}', [MyQuizController::class, 'destroy'])
         ->name('my-quizzes.destroy');
+
+    Route::post('/folders', [\App\Http\Controllers\FolderController::class, 'store'])->name('folders.store');
+    Route::put('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'update'])->name('folders.update');
+    Route::delete('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'destroy'])->name('folders.destroy');
     // Route::get('/quizzes', [QuizController::class, 'discover']);
     // Route::get('/quizzes/{id}', [QuizController::class, 'show']);
 

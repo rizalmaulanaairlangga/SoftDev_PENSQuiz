@@ -20,7 +20,6 @@ class Question extends Model
         'content',
         'question_type',
         'order_index',
-        'explanation',
     ];
 
     public function quiz()

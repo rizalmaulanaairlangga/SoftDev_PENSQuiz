@@ -40,10 +40,6 @@ class QuizCopySeeder extends Seeder
 
                     'major_id' => $quiz->major_id,
                     'course_id' => $quiz->course_id,
-                    'lecturer_id' => $quiz->lecturer_id,
-                    'academic_year_id' => $quiz->academic_year_id,
-                    'class_id' => $quiz->class_id,
-                    'semester' => $quiz->semester,
 
                     'visibility' => 'draft',
                     'access' => 'private',
