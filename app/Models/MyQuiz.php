@@ -20,14 +20,12 @@ class MyQuiz extends Model
 
     protected $fillable = [
         'author_id',
+        'folder_id',
         'title',
         'description',
         'major_id',
         'course_id',
-        'lecturer_id',
-        'academic_year_id',
-        'class_id',
-        'semester',
+        'time_limit_minutes',
         'visibility',
         'access',
         'allow_copy',
@@ -56,9 +54,9 @@ class MyQuiz extends Model
         return $this->belongsToMany(Tag::class, 'quiz_tags', 'quiz_id', 'tag_id');
     }
 
-    public function lecturer()
+    public function folder()
     {
-        return $this->belongsTo(Lecturer::class, 'lecturer_id', 'id_lecturer');
+        return $this->belongsTo(Folder::class, 'folder_id', 'id_folder');
     }
 
     public function author()

@@ -28,9 +28,6 @@ class QuizSeeder extends Seeder
         // ambil reference data (ambil random nanti)
         $majorIds = DB::table('majors')->pluck('id_major')->toArray();
         $courseIds = DB::table('courses')->pluck('id_course')->toArray();
-        $lecturerIds = DB::table('lecturers')->pluck('id_lecturer')->toArray();
-        $yearIds = DB::table('academic_years')->pluck('id_academic_year')->toArray();
-        $classIds = DB::table('classes')->pluck('id_class')->toArray();
 
         $titles = [
             'Quiz Laravel Dasar', 'Pemrograman Web Lanjut', 'Struktur Data Quiz', 'Database Design Basics',
@@ -63,10 +60,6 @@ class QuizSeeder extends Seeder
                 'description' => 'A comprehensive quiz exploring ' . $title . '. Test your knowledge on core concepts and advanced topics with our curated questions.',
                 'major_id' => $this->randomOrNull($majorIds),
                 'course_id' => $this->randomOrNull($courseIds),
-                'lecturer_id' => $this->randomOrNull($lecturerIds),
-                'academic_year_id' => $this->randomOrNull($yearIds),
-                'class_id' => $this->randomOrNull($classIds),
-                'semester' => rand(1, 8),
                 'time_limit_minutes' => rand(1, 10) > 3 ? [15, 30, 45, 60, 90][array_rand([15, 30, 45, 60, 90])] : null,
                 'visibility' => 'published',
                 'access' => 'public',

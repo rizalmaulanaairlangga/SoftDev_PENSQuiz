@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\MyQuiz;
 use App\Models\Question;
 use App\Models\Tag;
+use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,13 +22,47 @@ class MyQuizController extends Controller
 
         $visibility = $request->input('visibility', 'all');
         $sort = $request->input('sort', 'latest');
+        $search = $request->input('search');
+        $filterTags = $request->input('tags', []);
+        $filterMajor = $request->input('major');
+        $filterCourse = $request->input('course');
 
         $query = MyQuiz::where('author_id', $userId)
-            ->with('course')
+            ->with(['course', 'major', 'tags'])
             ->withCount(['questions', 'attempts']);
 
         if ($visibility !== 'all') {
             $query->where('visibility', $visibility);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhereHas('major', function ($q) use ($search) {
+                      $q->where('name', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('course', function ($q) use ($search) {
+                      $q->where('name', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('tags', function ($q) use ($search) {
+                      $q->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        if (!empty($filterTags)) {
+            $query->whereHas('tags', function ($q) use ($filterTags) {
+                $q->whereIn('tags.id_tag', $filterTags);
+            });
+        }
+
+        if ($filterMajor) {
+            $query->where('major_id', $filterMajor);
+        }
+
+        if ($filterCourse) {
+            $query->where('course_id', $filterCourse);
         }
 
         if ($sort === 'latest') {
@@ -36,7 +71,59 @@ class MyQuizController extends Controller
             $query->orderBy('created_at', 'asc');
         }
 
-        $quizzes = $query->get();
+        $perPage = $request->input('per_page', 10);
+        $quizzes = $query->paginate($perPage)->appends($request->query());
+
+        $folderQuery = Folder::where('user_id', $userId)->withCount('quizzes');
+        
+        $hasFilters = $search || !empty($filterTags) || $filterMajor || $filterCourse || $visibility !== 'all';
+        
+        if ($hasFilters) {
+            $folderQuery->where(function($q) use ($search, $filterTags, $filterMajor, $filterCourse, $visibility) {
+                if ($search) {
+                    $q->where('name', 'like', '%' . $search . '%');
+                }
+                
+                $q->orWhereHas('quizzes', function($quizQuery) use ($search, $filterTags, $filterMajor, $filterCourse, $visibility) {
+                    if ($visibility !== 'all') {
+                        $quizQuery->where('visibility', $visibility);
+                    }
+                    if ($search) {
+                        $quizQuery->where(function ($sq) use ($search) {
+                            $sq->where('title', 'like', '%' . $search . '%')
+                              ->orWhere('description', 'like', '%' . $search . '%')
+                              ->orWhereHas('major', function ($q2) use ($search) {
+                                  $q2->where('name', 'like', '%' . $search . '%');
+                              })
+                              ->orWhereHas('course', function ($q2) use ($search) {
+                                  $q2->where('name', 'like', '%' . $search . '%');
+                              })
+                              ->orWhereHas('tags', function ($q2) use ($search) {
+                                  $q2->where('name', 'like', '%' . $search . '%');
+                              });
+                        });
+                    }
+                    if (!empty($filterTags)) {
+                        $quizQuery->whereHas('tags', function ($tq) use ($filterTags) {
+                            $tq->whereIn('tags.id_tag', $filterTags);
+                        });
+                    }
+                    if ($filterMajor) {
+                        $quizQuery->where('major_id', $filterMajor);
+                    }
+                    if ($filterCourse) {
+                        $quizQuery->where('course_id', $filterCourse);
+                    }
+                });
+            });
+        }
+        
+        $folders = $folderQuery->orderBy('name', 'asc')->get();
+
+        $scrollTo = null;
+        if ($hasFilters || request()->has('page')) {
+            $scrollTo = $folders->isNotEmpty() ? 'folders-section' : 'quizzes-section';
+        }
 
         $totalQuizzes = MyQuiz::where('author_id', $userId)->count();
 
@@ -48,14 +135,32 @@ class MyQuizController extends Controller
             $q->where('author_id', $userId);
         })->count();
 
-        $completionRate = $totalAttempts > 0 ? 100 : 0;
+        $completionRate = $totalAttempts > 0 ? 100 : 0; // This should ideally be calculated from finished attempts.
+
+        $popularTags = Tag::whereHas('quizzes', function ($q) use ($userId) {
+            $q->where('author_id', $userId);
+        })->withCount('quizzes')->orderByDesc('quizzes_count')->take(10)->get();
+
+        $majors = \App\Models\Major::all();
+        $courses = \App\Models\Course::all();
 
         return view('pages.quiz.myquiz', compact(
             'quizzes',
             'totalQuizzes',
             'totalQuestions',
             'totalAttempts',
-            'completionRate'
+            'completionRate',
+            'folders',
+            'popularTags',
+            'majors',
+            'courses',
+            'search',
+            'filterTags',
+            'filterMajor',
+            'filterCourse',
+            'scrollTo',
+            'visibility',
+            'sort'
         ));
     }
 
@@ -70,10 +175,11 @@ class MyQuizController extends Controller
         ]);
 
         $courses = Course::orderBy('name')->get();
+        $folders = Folder::where('user_id', Auth::id())->get();
         $formQuestions = $this->defaultFormQuestions();
         $tagsString = '';
 
-        return view('pages.quiz.form', compact('quiz', 'courses', 'formQuestions', 'tagsString'));
+        return view('pages.quiz.form', compact('quiz', 'courses', 'folders', 'formQuestions', 'tagsString'));
     }
 
     public function store(Request $request)
@@ -95,16 +201,14 @@ class MyQuizController extends Controller
         DB::transaction(function () use ($request, $validated, $normalizedQuestions) {
             $quiz = MyQuiz::create([
                 'author_id' => Auth::id(),
+                'folder_id' => $request->input('folder_id'),
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
 
                 'major_id' => $request->input('major_id'),
                 'course_id' => $validated['course_id'] ?? null,
-                'lecturer_id' => $request->input('lecturer_id'),
-                'academic_year_id' => $request->input('academic_year_id'),
-                'class_id' => $request->input('class_id'),
+                'time_limit_minutes' => $validated['time_limit_minutes'] ?? null,
 
-                'semester' => $validated['semester'] ?? null,
                 'visibility' => $validated['visibility'],
                 'access' => $validated['access'],
                 'allow_copy' => $request->boolean('allow_copy'),
@@ -131,12 +235,14 @@ class MyQuizController extends Controller
         $myquiz->load(['course', 'questions.options', 'tags']);
 
         $courses = Course::orderBy('name')->get();
+        $folders = Folder::where('user_id', Auth::id())->get();
         $formQuestions = $this->questionsFromQuiz($myquiz);
         $tagsString = $myquiz->tags->pluck('name')->implode(', ');
 
         return view('pages.quiz.form', [
             'quiz' => $myquiz,
             'courses' => $courses,
+            'folders' => $folders,
             'formQuestions' => $formQuestions,
             'tagsString' => $tagsString,
         ]);
@@ -174,14 +280,12 @@ class MyQuizController extends Controller
             $myquiz->update([
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
+                'folder_id' => $request->input('folder_id', $myquiz->folder_id),
 
                 'major_id' => $request->input('major_id', $myquiz->major_id),
                 'course_id' => $validated['course_id'] ?? $myquiz->course_id,
-                'lecturer_id' => $request->input('lecturer_id', $myquiz->lecturer_id),
-                'academic_year_id' => $request->input('academic_year_id', $myquiz->academic_year_id),
-                'class_id' => $request->input('class_id', $myquiz->class_id),
+                'time_limit_minutes' => $validated['time_limit_minutes'] ?? $myquiz->time_limit_minutes,
 
-                'semester' => $validated['semester'] ?? $myquiz->semester,
                 'visibility' => $validated['visibility'],
                 'access' => $validated['access'],
                 'allow_copy' => $request->boolean('allow_copy'),
@@ -219,7 +323,7 @@ class MyQuizController extends Controller
             'description' => ['nullable', 'string'],
 
             'course_id' => ['nullable', 'integer', 'exists:courses,id_course'],
-            'semester' => ['nullable', 'integer', 'min:1', 'max:14'],
+            'time_limit_minutes' => ['nullable', 'integer', 'min:1'],
 
             'access' => ['required', 'in:public,private'],
             'visibility' => ['required', 'in:draft,published'],
@@ -243,7 +347,6 @@ class MyQuizController extends Controller
             }
 
             $content = trim((string) ($question['content'] ?? ''));
-            $explanation = trim((string) ($question['explanation'] ?? ''));
 
             $rawOptions = $question['options'] ?? [];
             $options = [];
@@ -300,7 +403,6 @@ class MyQuizController extends Controller
                 'id_question' => $question['id_question'] ?? null,
                 'type' => $type,
                 'content' => $content,
-                'explanation' => $explanation !== '' ? $explanation : null,
                 'options' => $options,
                 'correct_indexes' => $correctIndexes,
             ];
@@ -327,14 +429,12 @@ class MyQuizController extends Controller
                     'content' => $questionData['content'],
                     'question_type' => $questionData['type'],
                     'order_index' => $questionIndex + 1,
-                    'explanation' => $questionData['explanation'],
                 ]);
             } else {
                 $question = $quiz->questions()->create([
                     'content' => $questionData['content'],
                     'question_type' => $questionData['type'],
                     'order_index' => $questionIndex + 1,
-                    'explanation' => $questionData['explanation'],
                 ]);
             }
 
@@ -414,7 +514,6 @@ class MyQuizController extends Controller
                 'id_question' => $question->id_question,
                 'type' => $type,
                 'content' => $question->content,
-                'explanation' => $question->explanation,
                 'correct_option' => $correctIndexes[0] ?? '0',
                 'correct_options' => $correctIndexes,
                 'options' => $options->map(fn ($option) => [
@@ -431,7 +530,6 @@ class MyQuizController extends Controller
             [
                 'type' => 'single_answer',
                 'content' => '',
-                'explanation' => '',
                 'correct_option' => '0',
                 'correct_options' => [],
                 'options' => [
@@ -444,7 +542,6 @@ class MyQuizController extends Controller
             [
                 'type' => 'multiple_answer',
                 'content' => '',
-                'explanation' => '',
                 'correct_option' => '0',
                 'correct_options' => [],
                 'options' => [

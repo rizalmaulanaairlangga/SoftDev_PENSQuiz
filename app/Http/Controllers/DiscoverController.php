@@ -225,12 +225,22 @@ class DiscoverController extends Controller
             );
         }
 
+        $usersClicked = \App\Models\QuizHistory::where('quiz_id', $quiz->id_quiz)->count();
+        $participants = \App\Models\Attempt::where('quiz_id', $quiz->id_quiz)->distinct('user_id')->count('user_id');
+        
+        $totalAttempts = \App\Models\Attempt::where('quiz_id', $quiz->id_quiz)->count();
+        $completedAttempts = \App\Models\Attempt::where('quiz_id', $quiz->id_quiz)->whereNotNull('submitted_at')->count();
+        $completionRate = $totalAttempts > 0 ? round(($completedAttempts / $totalAttempts) * 100) : 0;
+
         return view('pages.quiz.show', compact(
             'quiz',
             'questionCount',
             'relatedQuizzes',
             'tags',
-            'existingAttempt'
+            'existingAttempt',
+            'usersClicked',
+            'participants',
+            'completionRate'
         ));
     }
 }
