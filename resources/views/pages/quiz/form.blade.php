@@ -2,1292 +2,854 @@
 
 @php
     $isEdit = $quiz->exists;
-
-    $questionsData = old('questions');
-    if (!is_array($questionsData) || empty($questionsData)) {
-        $questionsData = $formQuestions;
-    }
-
-    $selectedVisibility = old('visibility', $quiz->visibility ?? 'draft');
-    $selectedAccess = old('access', $quiz->access ?? 'private');
-    $selectedAllowCopy = old('allow_copy', $quiz->allow_copy ?? false);
-
-    $draftKey = 'pensquiz-quiz-draft-v5-' . ($quiz->exists ? $quiz->id_quiz : 'new');
-
-    $originalQuizState = [
-        'title' => $quiz->title ?? '',
-        'description' => $quiz->description ?? '',
-        'course_id' => $quiz->course_id ?? '',
-        'semester' => $quiz->semester ?? '',
-        'access' => $quiz->access ?? 'private',
-        'visibility' => $quiz->visibility ?? 'draft',
-        'allow_copy' => (bool) ($quiz->allow_copy ?? false),
-        'cover_image_url' => $quiz->cover_image_url ?? null,
-        'questions' => $formQuestions,
-    ];
+    $questionsData = old('questions', $formQuestions);
+    $allTags = \App\Models\Tag::pluck('name')->toArray();
 @endphp
 
-<div class="min-h-screen bg-[#f5f5f5] px-4 py-6 lg:px-6">
-    <div class="mx-auto max-w-7xl space-y-6">
-
-        @if(session('success'))
-            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                Please check the form before continuing.
-            </div>
-        @endif
-
-        <div id="clientErrorBox" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <ul id="clientErrorList" class="list-disc space-y-1 pl-5"></ul>
-        </div>
+<div class="min-h-screen px-4 py-8 lg:px-6" x-data="quizFormHandler()">
+    <div class="mx-auto max-w-4xl">
 
         <form
             id="quizForm"
             action="{{ $isEdit ? route('my-quizzes.update', $quiz) : route('my-quizzes.store') }}"
             method="POST"
             enctype="multipart/form-data"
-            class="space-y-6"
+            class="space-y-8"
         >
             @csrf
             @if($isEdit)
                 @method('PUT')
             @endif
 
-            <input type="hidden" name="visibility" id="visibilityInput" value="{{ $selectedVisibility }}">
-            <input type="hidden" name="remove_cover" id="removeCoverInput" value="0">
+            <input type="hidden" name="visibility" x-model="visibility">
 
-            <!-- COVER -->
-            <section class="rounded-[18px] border border-gray-300 bg-[#e8e8e8] p-4 shadow-sm">
-                <div class="flex min-h-[220px] items-center justify-center overflow-hidden rounded-[16px] border border-gray-300 bg-[#efefef]">
-                    @if(!empty($quiz->cover_image_url))
-                        <img id="coverPreview" src="{{ $quiz->cover_image_url }}" class="h-full w-full object-cover" alt="Quiz cover">
-                        <span id="coverPlaceholder" class="hidden text-gray-400">[Cover]</span>
-                    @else
-                        <img id="coverPreview" src="" class="hidden h-full w-full object-cover" alt="Quiz cover">
-                        <span id="coverPlaceholder" class="text-gray-400">[Cover]</span>
-                    @endif
+            <!-- STAGE 1: QUIZ DETAIL -->
+            <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-8 relative">
+                    <button type="button" @click="showCancelModal = true" class="absolute left-0 flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-black transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                        Cancel
+                    </button>
+                    <h1 class="text-2xl font-extrabold text-black w-full text-center">Quiz Detail</h1>
                 </div>
 
-                <div class="mt-4 flex flex-wrap justify-center gap-3">
-                    <button type="button" onclick="document.getElementById('coverInput').click()"
-                        class="cursor-pointer rounded-xl border border-gray-400 bg-white px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]">
-                        Change Cover
-                    </button>
-                    <button type="button" onclick="document.getElementById('coverInput').click()"
-                        class="cursor-pointer rounded-xl border border-gray-400 bg-white px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]">
-                        Edit Cover
-                    </button>
-                    <button type="button" onclick="removeCover()"
-                        class="cursor-pointer rounded-xl border border-gray-400 bg-white px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-red-50 hover:text-red-600 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
-                        Remove Cover
-                    </button>
-                </div>
-
-                <input type="file" name="cover_image" id="coverInput" class="hidden" accept="image/*">
-            </section>
-
-            <div class="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.95fr)]">
-                <!-- LEFT -->
-                <section class="space-y-4">
-                    <div>
-                        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Make Quizzes</h1>
-                        <p class="mt-2 text-sm text-gray-500">Fill in the quiz details, add questions, then publish.</p>
+                <!-- Main Card -->
+                <div class="bg-white rounded-[32px] shadow-sm border border-gray-200">
+                    <!-- Default Cover Banner -->
+                    <div class="h-32 w-full bg-gray-100 relative rounded-t-[32px] overflow-hidden">
+                        <img src="{{ asset('assets/default-cover.png') }}" class="w-full h-full object-cover" alt="Quiz Cover">
                     </div>
 
-                    <div class="rounded-[20px] border border-gray-300 bg-white p-5 shadow-sm">
-                        <div class="grid gap-4">
-                            <div>
-                                <label class="mb-2 block text-sm font-semibold text-gray-800">Quiz Title</label>
-                                <input
-                                    id="quizTitleInput"
-                                    name="title"
-                                    type="text"
-                                    value="{{ old('title', $quiz->title) }}"
-                                    placeholder="Pemrograman Dasar - Pertemuan 2"
-                                    class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
+                    <div class="p-8 lg:p-12 space-y-8">
+                        <!-- Title -->
+                        <div>
+                            <label class="block text-sm font-bold text-black mb-3">Quiz Title</label>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    name="title" 
+                                    x-model="title"
+                                    maxlength="100"
+                                    placeholder="Enter your quiz title here" 
+                                    class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black placeholder:text-gray-300 transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none"
                                 >
-                                @error('title') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
+                                <div class="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-300 uppercase tracking-wider">
+                                    <span x-text="title.length"></span>/100 Characters
+                                </div>
                             </div>
+                            @error('title') <p class="mt-2 text-xs text-red-600 font-medium">{{ $message }}</p> @enderror
+                        </div>
 
+                        <!-- Major & Course -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="mb-2 block text-sm font-semibold text-gray-800">Description</label>
-                                <textarea
-                                    id="quizDescriptionInput"
-                                    name="description"
-                                    rows="3"
-                                    placeholder="This quiz covers the material..."
-                                    class="w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                >{{ old('description', $quiz->description) }}</textarea>
-                                @error('description') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-semibold text-gray-800">Tags (comma separated)</label>
-                                <input
-                                    id="tagsInput"
-                                    name="tags"
-                                    type="text"
-                                    value="{{ old('tags', $tagsString ?? '') }}"
-                                    placeholder="coding, web, laravel"
-                                    class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                >
-                                @error('tags') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div class="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <label class="mb-2 block text-sm font-semibold text-gray-800">Course</label>
-                                    <select
-                                        id="courseSelect"
-                                        name="course_id"
-                                        class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                    >
-                                        <option value="">Select course</option>
-                                        @foreach($courses as $course)
-                                            <option value="{{ $course->id_course }}" @selected((string) old('course_id', $quiz->course_id) === (string) $course->id_course)>
-                                                {{ $course->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('course_id') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-                                </div>
-
-                                <div>
-                                    <label class="mb-2 block text-sm font-semibold text-gray-800">Semester</label>
-                                    <input
-                                        id="semesterInput"
-                                        type="number"
-                                        name="semester"
-                                        min="1"
-                                        max="14"
-                                        value="{{ old('semester', $quiz->semester) }}"
-                                        placeholder="4"
-                                        class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                    >
-                                    @error('semester') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-                                </div>
-                            </div>
-
-                            <div class="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <label class="mb-2 block text-sm font-semibold text-gray-800">Access</label>
-                                    <select
-                                        id="accessSelect"
-                                        name="access"
-                                        class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                    >
-                                        <option value="private" @selected($selectedAccess === 'private')>Private</option>
-                                        <option value="public" @selected($selectedAccess === 'public')>Public</option>
-                                    </select>
-                                </div>
-
-                                <div class="flex items-end">
-                                    <label class="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-800 transition hover:bg-gray-50">
-                                        <span>Allow Copy</span>
-                                        <input
-                                            id="allowCopyInput"
-                                            type="checkbox"
-                                            name="allow_copy"
-                                            value="1"
-                                            class="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#104876] focus:ring-[#104876]"
-                                            @checked((bool) $selectedAllowCopy)
-                                        >
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="border-t border-dashed border-gray-300 pt-5">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-700">List of Questions</span>
-                                        <span id="questionCountBadge" class="rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-500">
-                                            {{ count($questionsData) }} Questions
-                                        </span>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onclick="addQuestionTop()"
-                                        class="cursor-pointer rounded-xl bg-[#104876] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1a5a8a] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/30 active:scale-[0.98]"
-                                    >
-                                        + Add Questions
+                                <label class="block text-sm font-bold text-black mb-3">Quiz Major</label>
+                                <div x-data="{ open: false, value: '{{ old('major_id', $quiz->major_id ?? '') }}', label: '{{ old('major_id', $quiz->major_id) && $majors->firstWhere('id_major', old('major_id', $quiz->major_id)) ? $majors->firstWhere('id_major', old('major_id', $quiz->major_id))->name : 'Choose your quiz major here' }}' }" class="relative">
+                                    <input type="hidden" name="major_id" x-model="value" @change="major_id = value; isDirty = true">
+                                    <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
+                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                                     </button>
+                                    <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
+                                        <div @click="value = ''; label = 'Choose your quiz major here'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz major here</div>
+                                        @foreach($majors as $major)
+                                            <div @click="value = '{{ $major->id_major }}'; label = '{{ $major->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $major->id_major }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $major->name }}</div>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
-
-                            <div id="questionsList" class="space-y-4">
-                                @foreach($questionsData as $index => $question)
-                                    @php
-                                        $questionType = old("questions.$index.type", $question['type'] ?? 'single_answer');
-                                        $questionContent = old("questions.$index.content", $question['content'] ?? '');
-                                        $questionExplanation = old("questions.$index.explanation", $question['explanation'] ?? '');
-                                        $correctOption = old("questions.$index.correct_option", $question['correct_option'] ?? '0');
-                                        $correctOptions = old("questions.$index.correct_options", $question['correct_options'] ?? []);
-                                        $options = old("questions.$index.options", $question['options'] ?? []);
-
-                                        if (!is_array($options) || empty($options)) {
-                                            $options = [
-                                                ['content' => ''],
-                                                ['content' => ''],
-                                                ['content' => ''],
-                                                ['content' => ''],
-                                            ];
-                                        }
-                                    @endphp
-
-                                    <div class="question-card rounded-[18px] border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md" data-question-card data-question-index="{{ $index }}">
-                                        <input type="hidden" name="questions[{{ $index }}][id_question]" value="{{ $question['id_question'] ?? '' }}">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div class="flex items-center gap-3">
-                                                <span data-question-number class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#104876] text-sm font-bold text-white">
-                                                    {{ $loop->iteration }}
-                                                </span>
-
-                                                <select
-                                                    name="questions[{{ $index }}][type]"
-                                                    class="question-type-select cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                                    onchange="toggleQuestionType(this)"
-                                                >
-                                                    <option value="single_answer" @selected($questionType === 'single_answer')>Single Answer</option>
-                                                    <option value="multiple_answer" @selected($questionType === 'multiple_answer')>Multiple Answer</option>
-                                                </select>
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onclick="removeQuestion(this)"
-                                                class="cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-
-                                        <div class="mt-4 space-y-4">
-                                            <div>
-                                                <label class="mb-2 block text-sm font-medium text-gray-800">Question</label>
-                                                <textarea
-                                                    name="questions[{{ $index }}][content]"
-                                                    rows="3"
-                                                    placeholder="Write the question here..."
-                                                    class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                                >{{ $questionContent }}</textarea>
-                                                @error("questions.$index.content") <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-                                            </div>
-
-                                            <div>
-                                                <label class="mb-2 block text-sm font-medium text-gray-800">Explanation / Rubric</label>
-                                                <textarea
-                                                    name="questions[{{ $index }}][explanation]"
-                                                    rows="2"
-                                                    placeholder="Optional explanation..."
-                                                    class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                                >{{ $questionExplanation }}</textarea>
-                                            </div>
-
-                                            <div data-options-wrapper class="space-y-3 {{ $questionType === 'multiple_answer' ? '' : '' }}">
-                                                <div class="flex items-center justify-between">
-                                                    <span class="text-xs font-semibold uppercase tracking-wide text-gray-700">
-                                                        {{ $questionType === 'multiple_answer' ? 'Select all correct answers' : 'Choose one correct answer' }}
-                                                    </span>
-
-                                                    <button
-                                                        type="button"
-                                                        onclick="addOption(this)"
-                                                        class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/20"
-                                                    >
-                                                        + Option
-                                                    </button>
-                                                </div>
-
-                                                <div data-options-list class="space-y-2">
-                                                    @foreach($options as $oIndex => $option)
-                                                        <div class="option-row flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                                                            <input type="hidden" name="questions[{{ $index }}][options][{{ $oIndex }}][id_option]" value="{{ $option['id_option'] ?? '' }}">
-                                                            <div data-correct-control class="mt-1">
-                                                                @if($questionType === 'multiple_answer')
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        name="questions[{{ $index }}][correct_options][]"
-                                                                        value="{{ $oIndex }}"
-                                                                        class="h-4 w-4 cursor-pointer text-[#104876] focus:ring-[#104876]"
-                                                                        @checked(in_array((string) $oIndex, array_map('strval', (array) $correctOptions), true))
-                                                                    >
-                                                                @else
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="questions[{{ $index }}][correct_option]"
-                                                                        value="{{ $oIndex }}"
-                                                                        class="h-4 w-4 cursor-pointer text-[#104876] focus:ring-[#104876]"
-                                                                        @checked((string) $correctOption === (string) $oIndex)
-                                                                    >
-                                                                @endif
-                                                            </div>
-
-                                                            <input
-                                                                type="text"
-                                                                name="questions[{{ $index }}][options][{{ $oIndex }}][content]"
-                                                                value="{{ $option['content'] ?? '' }}"
-                                                                placeholder="Option {{ $oIndex + 1 }}"
-                                                                class="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                                            >
-
-                                                            <button
-                                                                type="button"
-                                                                onclick="removeOption(this)"
-                                                                class="cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                                                            >
-                                                                ×
-                                                            </button>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div>
+                                <label class="block text-sm font-bold text-black mb-3">Quiz Course</label>
+                                <div x-data="{ open: false, value: '{{ old('course_id', $quiz->course_id ?? '') }}', label: '{{ old('course_id', $quiz->course_id) && $courses->firstWhere('id_course', old('course_id', $quiz->course_id)) ? $courses->firstWhere('id_course', old('course_id', $quiz->course_id))->name : 'Choose your quiz course here' }}' }" class="relative">
+                                    <input type="hidden" name="course_id" x-model="value" @change="course_id = value; isDirty = true">
+                                    <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
+                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                    <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
+                                        <div @click="value = ''; label = 'Choose your quiz course here'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz course here</div>
+                                        @foreach($courses as $course)
+                                            <div @click="value = '{{ $course->id_course }}'; label = '{{ $course->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $course->id_course }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $course->name }}</div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- RIGHT -->
-                <aside class="space-y-4 lg:sticky lg:top-6">
-                    <div class="rounded-[20px] border border-gray-300 bg-white p-4 shadow-sm">
-                        <div class="flex items-center justify-between gap-3">
-                            <h2 class="text-base font-semibold text-gray-900">Quiz Summary</h2>
-                            <span class="rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-500">Live Update</span>
-                        </div>
-
-                        <div class="my-4 border-t border-dashed border-gray-300"></div>
-
-                        <div class="space-y-3 text-sm">
-                            <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-200 py-2">
-                                <span class="text-gray-700">Quiz Title</span>
-                                <span id="summaryTitle" class="max-w-[55%] truncate font-medium text-gray-900">{{ old('title', $quiz->title) ?: '—' }}</span>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-200 py-2">
-                                <span class="text-gray-700">Course</span>
-                                <span id="summaryCourse" class="max-w-[55%] truncate font-medium text-gray-900">
-                                    {{ $quiz->course->name ?? 'No course' }}
-                                </span>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-200 py-2">
-                                <span class="text-gray-700">Semester</span>
-                                <span id="summarySemester" class="font-medium text-gray-900">{{ old('semester', $quiz->semester) ?: '—' }}</span>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-200 py-2">
-                                <span class="text-gray-700">Access</span>
-                                <span id="summaryAccess" class="font-medium text-gray-900">{{ ucfirst($selectedAccess) }}</span>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-200 py-2">
-                                <span class="text-gray-700">Visibility</span>
-                                <span id="summaryVisibility" class="font-medium text-gray-900">{{ ucfirst($selectedVisibility) }}</span>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3 py-2">
-                                <span class="text-gray-700">Allow Copy</span>
-                                <span id="summaryAllowCopy" class="font-medium text-gray-900">{{ $selectedAllowCopy ? 'Enabled' : 'Disabled' }}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-4 rounded-[18px] border border-gray-300 bg-white p-4 text-center shadow-sm">
-                            <div id="summaryQuestionCount" class="text-4xl font-extrabold text-gray-900">{{ count($questionsData) }}</div>
-                            <div class="mt-1 text-xs text-gray-500">Number of Questions</div>
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-bold text-black mb-3">Description</label>
+                            <div class="relative">
+                                <textarea 
+                                    name="description" 
+                                    rows="4" 
+                                    x-model="description"
+                                    maxlength="300"
+                                    placeholder="Enter your quiz description here" 
+                                    class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black placeholder:text-gray-300 transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none resize-none"
+                                ></textarea>
+                                <div class="absolute right-5 bottom-4 text-[10px] font-bold text-gray-300 uppercase tracking-wider">
+                                    <span x-text="description.length"></span>/300 Characters
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                        <button
-                            type="button"
-                            onclick="submitQuizForm('published')"
-                            class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-[#104876] px-5 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#1a5a8a] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/30 active:scale-[0.99]"
-                        >
-                            {{ $isEdit ? 'Update & Publish Quiz' : 'Publish Quiz' }}
-                        </button>
+                        <!-- Duration & Access -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-black mb-3">Duration (minutes)</label>
+                                <div class="relative">
+                                    <input 
+                                        type="number" 
+                                        name="time_limit_minutes" 
+                                        x-model="time_limit_minutes"
+                                        placeholder="e.g. 60" 
+                                        class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none"
+                                    >
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-black mb-3">Access</label>
+                                <div x-data="{ open: false, value: '{{ old('access', $quiz->access ?? 'private') }}', label: '{{ old('access', $quiz->access) == 'public' ? 'Public' : 'Private' }}' }" class="relative">
+                                    <input type="hidden" name="access" x-model="value" @change="access = value; isDirty = true">
+                                    <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
+                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                    <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden py-1">
+                                        <div @click="value = 'private'; label = 'Private'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == 'private' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Private</div>
+                                        <div @click="value = 'public'; label = 'Public'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == 'public' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Public</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                        <button
-                            type="button"
-                            onclick="submitQuizForm('draft')"
-                            class="w-full cursor-pointer rounded-[18px] border border-gray-300 bg-white px-5 py-4 text-base font-semibold text-gray-900 shadow-sm transition hover:bg-gray-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 active:scale-[0.99]"
-                        >
-                            {{ $isEdit ? 'Update as Draft' : 'Save as Draft' }}
-                        </button>
-
-                        @if($quiz->exists)
-                            <button
-                                type="button"
-                                onclick="discardChanges()"
-                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
-                            >
-                                Discard Changes
-                            </button>
-
-                            <button
-                                type="submit"
-                                form="deleteQuizForm"
-                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
-                            >
-                                Delete Quiz
-                            </button>
-                        @else
-                            <button
-                                type="button"
-                                onclick="resetCreateForm()"
-                                class="w-full cursor-pointer rounded-[18px] border border-red-200 bg-white px-5 py-4 text-base font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow-md"
-                            >
-                                Discard Quiz
-                            </button>
-                        @endif
-                </aside>
-            </div>
-
-            <template id="questionTemplate">
-                <div class="question-card rounded-[18px] border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md" data-question-card data-question-index="__INDEX__">
-                    <div class="flex items-center justify-between gap-3">
+                        <!-- Allow Copy -->
                         <div class="flex items-center gap-3">
-                            <span data-question-number class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#104876] text-sm font-bold text-white">__NUM__</span>
-
-                            <select
-                                name="questions[__INDEX__][type]"
-                                class="question-type-select cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                                onchange="toggleQuestionType(this)"
-                            >
-                                <option value="single_answer">Single Answer</option>
-                                <option value="multiple_answer">Multiple Answer</option>
-                            </select>
+                            <label class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" name="allow_copy" value="1" x-model="allow_copy" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#104876]"></div>
+                                <span class="ml-3 text-sm font-bold text-black group-hover:text-[#104876] transition">Allow Copy</span>
+                            </label>
                         </div>
 
-                        <button
-                            type="button"
-                            onclick="removeQuestion(this)"
-                            class="cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                        >
-                            Delete
-                        </button>
-                    </div>
-
-                    <div class="mt-4 space-y-4">
+                        <!-- Tags System -->
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-gray-800">Question</label>
-                            <textarea
-                                name="questions[__INDEX__][content]"
-                                rows="3"
-                                placeholder="Write the question here..."
-                                class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                            ></textarea>
-                        </div>
+                            <label class="block text-sm font-bold text-black mb-4">Tags</label>
+                            
+                            <!-- Selected Tags -->
+                            <div class="flex flex-wrap gap-2 mb-4 min-h-[36px]">
+                                <template x-for="(tag, index) in tags" :key="index">
+                                    <div class="flex items-center gap-2 bg-[#528EB8] text-white px-4 py-1.5 rounded-full text-xs font-bold transition hover:bg-[#3E779F]">
+                                        <span x-text="tag"></span>
+                                        <button type="button" @click="removeTag(index)" class="hover:text-red-200 transition">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                        <input type="hidden" name="tags[]" :value="tag">
+                                    </div>
+                                </template>
+                            </div>
 
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-gray-800">Explanation / Rubric</label>
-                            <textarea
-                                name="questions[__INDEX__][explanation]"
-                                rows="2"
-                                placeholder="Optional explanation..."
-                                class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                            ></textarea>
-                        </div>
-
-                        <div data-options-wrapper class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase tracking-wide text-gray-700">Choose one correct answer</span>
-                                <button
-                                    type="button"
-                                    onclick="addOption(this)"
-                                    class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/20"
+                            <!-- Tag Search & Add -->
+                            <div class="flex items-center gap-3 relative">
+                                <div class="relative flex-1 max-w-sm">
+                                    <input 
+                                        type="text" 
+                                        x-model="tagSearch" 
+                                        @input="handleTagSearch"
+                                        @keydown.enter.prevent="addTag(tagSearch)"
+                                        placeholder="Search or add tags..." 
+                                        class="w-full rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none shadow-sm"
+                                    >
+                                    
+                                    <!-- Recommendations Dropdown -->
+                                    <div 
+                                        x-show="showTagRecs && tagRecs.length > 0" 
+                                        @click.away="showTagRecs = false"
+                                        style="display: none;"
+                                        class="absolute top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                                    >
+                                        <template x-for="rec in tagRecs" :key="rec">
+                                            <button 
+                                                type="button" 
+                                                @click="addTag(rec)"
+                                                class="w-full text-left px-5 py-2.5 text-sm font-medium hover:bg-[#eef8fc] hover:text-[#528FB9] transition"
+                                                x-text="rec"
+                                            ></button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    @click="addTag(tagSearch)"
+                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-[#528FB9] hover:text-white transition shadow-sm font-bold text-xl"
                                 >
-                                    + Option
+                                    +
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div data-options-list class="space-y-2">
-                                ${buildOptionRow('__INDEX__', 0, 'single_answer')}
-                                ${buildOptionRow('__INDEX__', 1, 'single_answer')}
-                                ${buildOptionRow('__INDEX__', 2, 'single_answer')}
-                                ${buildOptionRow('__INDEX__', 3, 'single_answer')}
+                <!-- Footer Action -->
+                <div class="mt-12 flex justify-end">
+                    <button 
+                        type="button" 
+                        @click="step = 2"
+                        class="bg-[#104876] text-white px-10 py-4 rounded-full font-bold shadow-lg hover:bg-[#0c365a] hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center gap-3"
+                    >
+                        Continue
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STAGE 2: CREATE QUESTIONS -->
+            <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" style="display: none;" class="relative">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-12 relative">
+                    <button type="button" @click="showCancelModal = true" class="absolute left-0 flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-black transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                        Cancel
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-black w-full text-center">Questions</h1>
+                </div>
+
+                <div class="space-y-16">
+                    <template x-for="(q, qIdx) in questions" :key="qIdx">
+                        <div class="relative group" :style="{ zIndex: (questions.length - qIdx) * 10 }">
+                            <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 p-10 lg:p-14 relative">
+                                <!-- Question Header -->
+                                <div class="flex items-center justify-between mb-10">
+                                    <h2 class="text-2xl font-extrabold text-black" x-text="'Question ' + (qIdx + 1)"></h2>
+                                    
+                                    <!-- Question Type Dropdown -->
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button type="button" @click="open = !open" @click.away="open = false" class="rounded-2xl border border-gray-100 bg-white px-6 py-3 text-sm font-bold text-gray-500 transition hover:border-[#528FB9] flex items-center gap-4 min-w-[180px] justify-between">
+                                            <span x-text="q.type === 'multiple_choice' ? 'Multiple Choice' : 'Checkbox'"></span>
+                                            <svg class="w-4 h-4 text-gray-300" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                        <div x-show="open" x-transition style="display: none;" class="absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl py-1 overflow-hidden">
+                                            <button type="button" @click="q.type = 'multiple_choice'; open = false" class="w-full text-left px-5 py-3 text-sm font-bold hover:bg-[#eef8fc] hover:text-[#528FB9] transition">Multiple Choice</button>
+                                            <button type="button" @click="q.type = 'checkbox'; open = false" class="w-full text-left px-5 py-3 text-sm font-bold hover:bg-[#eef8fc] hover:text-[#528FB9] transition">Checkbox</button>
+                                        </div>
+                                        <input type="hidden" :name="'questions['+qIdx+'][type]'" :value="q.type">
+                                    </div>
+                                </div>
+
+                                <div class="space-y-12">
+                                    <!-- Question Content -->
+                                    <div>
+                                        <label class="block text-xl font-extrabold text-black mb-6">Question</label>
+                                        <div class="relative">
+                                            <textarea 
+                                                :name="'questions['+qIdx+'][content]'" 
+                                                x-model="q.content"
+                                                rows="5" 
+                                                placeholder="Enter your question here" 
+                                                class="w-full rounded-[32px] border border-gray-100 bg-white px-8 py-7 text-sm font-medium text-black placeholder:text-gray-200 transition focus:border-[#528FB9] focus:ring-0 resize-none"
+                                            ></textarea>
+                                            <div class="absolute right-8 top-7 text-[10px] font-bold text-gray-200 uppercase tracking-widest">
+                                                <span x-text="q.content.length"></span>/250 Characters
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Choices -->
+                                    <div>
+                                        <label class="block text-xl font-extrabold text-black mb-6">Choices</label>
+                                        <div class="space-y-4 mb-8">
+                                            <template x-for="(opt, oIdx) in q.options" :key="oIdx">
+                                                <div class="flex items-center gap-4 group/choice">
+                                                    <div class="relative flex-1">
+                                                        <div class="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-50 text-sm font-bold text-black" x-text="String.fromCharCode(65 + oIdx)"></div>
+                                                        <input 
+                                                            type="text" 
+                                                            :name="'questions['+qIdx+'][options]['+oIdx+'][content]'"
+                                                            x-model="opt.content"
+                                                            placeholder="Enter your choice here" 
+                                                            class="w-full rounded-3xl border-none pl-20 pr-12 py-6 text-sm font-medium text-black placeholder:text-gray-300 transition focus:ring-2 focus:ring-[#528FB9]/20 shadow-sm"
+                                                            :class="opt.content ? 'bg-[#eef8fc]' : 'bg-gray-50/50 border border-dashed border-gray-200'"
+                                                        >
+                                                        <input type="hidden" :name="'questions['+qIdx+'][options]['+oIdx+'][id_option]'" :value="opt.id_option">
+                                                        
+                                                        <button 
+                                                            type="button" 
+                                                            @click="removeOption(qIdx, oIdx)" 
+                                                            class="absolute right-[-14px] top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full border border-red-500 bg-white text-red-500 hover:bg-red-50 transition shadow-md z-20"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <button type="button" @click="addOption(qIdx)" class="w-full py-6 rounded-[32px] bg-gray-50/50 text-sm font-bold text-black hover:bg-gray-100 transition border border-dashed border-gray-200">
+                                            Add Choice
+                                        </button>
+                                    </div>
+
+                                    <!-- Correct Answer -->
+                                    <div>
+                                        <label class="block text-xl font-extrabold text-black mb-6">Correct Answer</label>
+                                        
+                                        <!-- Multiple Choice Dropdown -->
+                                        <template x-if="q.type === 'multiple_choice'">
+                                            <div x-data="{ open: false }" class="relative">
+                                                <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-[32px] border border-gray-100 bg-gray-50/50 px-8 py-7 text-sm font-bold text-black transition flex items-center justify-between hover:border-[#528FB9]">
+                                                    <div class="flex items-center gap-6">
+                                                        <div x-show="q.correct_option !== null" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 text-sm font-bold" x-text="String.fromCharCode(65 + parseInt(q.correct_option))"></div>
+                                                        <span x-text="q.options[q.correct_option]?.content || 'Select correct answer'"></span>
+                                                    </div>
+                                                    <svg class="w-5 h-5 text-gray-300" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                                </button>
+                                                <div x-show="open" x-transition style="display: none;" class="absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl py-1 overflow-hidden">
+                                                    <template x-for="(opt, oIdx) in q.options" :key="oIdx">
+                                                        <button type="button" @click="q.correct_option = oIdx; open = false" class="w-full text-left px-8 py-5 text-sm font-medium hover:bg-[#eef8fc] hover:text-[#528FB9] transition flex items-center gap-6">
+                                                            <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 border border-gray-100 text-sm font-bold" x-text="String.fromCharCode(65 + oIdx)"></div>
+                                                            <span x-text="opt.content || '(Empty choice)'"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                                <input type="hidden" :name="'questions['+qIdx+'][correct_option]'" :value="q.correct_option">
+                                            </div>
+                                        </template>
+
+                                        <!-- Checkbox (Multiple Answers) -->
+                                        <template x-if="q.type === 'checkbox'">
+                                            <div class="space-y-6">
+                                                <template x-for="(corIdx, cIdx) in q.correct_options" :key="cIdx">
+                                                    <div x-data="{ open: false }" class="relative">
+                                                        <div @click="open = !open" @click.away="open = false" class="w-full rounded-[32px] border border-gray-100 bg-gray-50/50 px-8 py-7 text-sm font-bold text-black transition flex items-center justify-between hover:border-[#528FB9] cursor-pointer">
+                                                            <div class="flex items-center gap-6">
+                                                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-50 text-sm font-bold" x-text="String.fromCharCode(65 + parseInt(corIdx))"></div>
+                                                                <span x-text="q.options[corIdx]?.content || 'Select correct answer'"></span>
+                                                            </div>
+                                                            <div class="flex items-center gap-4 pr-4">
+                                                                <svg class="w-5 h-5 text-gray-300" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Circular Delete Button for Correct Answer slot -->
+                                                        <button 
+                                                            type="button" 
+                                                            @click.stop="q.correct_options.splice(cIdx, 1)" 
+                                                            class="absolute right-[-14px] top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full border border-red-500 bg-white text-red-500 hover:bg-red-50 transition shadow-md z-20"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                        </button>
+
+                                                        <div x-show="open" x-transition style="display: none;" class="absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-[32px] shadow-xl py-2 overflow-hidden">
+                                                            <template x-for="(opt, oIdx) in q.options" :key="oIdx">
+                                                                <button 
+                                                                    type="button" 
+                                                                    @click="q.correct_options[cIdx] = oIdx; open = false" 
+                                                                    x-show="!q.correct_options.includes(oIdx) || corIdx === oIdx"
+                                                                    class="w-full text-left px-8 py-5 text-sm font-medium hover:bg-[#eef8fc] hover:text-[#528FB9] transition flex items-center gap-6"
+                                                                >
+                                                                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 border border-gray-50 text-sm font-bold" x-text="String.fromCharCode(65 + oIdx)"></div>
+                                                                    <span x-text="opt.content || '(Empty choice)'"></span>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                        <input type="hidden" :name="'questions['+qIdx+'][correct_options][]'" :value="corIdx">
+                                                    </div>
+                                                </template>
+                                                <button 
+                                                    type="button" 
+                                                    @click="let available = q.options.findIndex((_, idx) => !q.correct_options.includes(idx)); if(available !== -1) q.correct_options.push(available)" 
+                                                    class="w-full py-7 rounded-[32px] bg-gray-50/50 text-sm font-bold text-black hover:bg-gray-100 transition border border-dashed border-gray-200"
+                                                >
+                                                    Add Correct Answer
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Individual Card Toolbar -->
+                            <div class="absolute right-[-80px] top-0 flex flex-col gap-4 bg-white/40 backdrop-blur-md rounded-[32px] p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+                                <button type="button" @click="addQuestion(qIdx)" class="w-14 h-14 flex items-center justify-center rounded-[24px] bg-[#104876] text-white hover:bg-[#0c365a] transition shadow-xl scale-90 hover:scale-100 active:scale-95">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                                </button>
+                                <button type="button" @click="questions.splice(qIdx, 1)" class="w-14 h-14 flex items-center justify-center rounded-[24px] bg-white text-gray-300 hover:text-red-500 transition shadow-lg border border-gray-50 scale-90 hover:scale-100 active:scale-95">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer Navigation -->
+                <div class="mt-24 flex justify-between items-center pb-24">
+                    <button 
+                        type="button" 
+                        @click="step = 1"
+                        class="bg-white border border-gray-100 text-black px-12 py-6 rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition flex items-center gap-4"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        Previous
+                    </button>
+                    
+                    <div class="flex gap-6">
+                        <button 
+                            type="button" 
+                            @click="submitQuizForm('draft')"
+                            class="bg-white border border-gray-100 text-gray-400 px-12 py-6 rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition"
+                        >
+                            Save as Draft
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="goToSummary()"
+                            class="bg-[#104876] text-white px-12 py-6 rounded-[32px] font-bold shadow-xl hover:bg-[#0c365a] hover:shadow-2xl hover:-translate-y-1 transform transition-all flex items-center gap-4"
+                        >
+                            Continue
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 3: SUMMARY -->
+            <div x-show="step === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" style="display: none;" class="relative">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-12 relative">
+                    <button type="button" @click="step = 2" class="absolute left-0 flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-black transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                        Previous
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-black w-full text-center">Summary</h1>
+                </div>
+
+                <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 overflow-hidden">
+                    <!-- Banner Image -->
+                    <div class="h-64 lg:h-80 w-full overflow-hidden">
+                        <img src="{{ asset('assets/default-cover.png') }}" alt="Quiz Cover" class="h-full w-full object-cover">
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-10 lg:p-14">
+                        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-8 mb-12">
+                            <div>
+                                <h1 class="text-4xl font-black text-black mb-4" x-text="title || 'Untitled Quiz'"></h1>
+                                <div class="flex items-center gap-3 text-lg font-bold text-gray-400">
+                                    <span x-text="getSelectedMajorName() || 'No Major'"></span>
+                                    <span>•</span>
+                                    <span x-text="getSelectedCourseName() || 'No Course'"></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-gray-300 uppercase tracking-widest">Quiz Creator</span>
+                                <div class="text-lg font-extrabold text-black mt-1">{{ auth()->user()->full_name }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 flex items-center gap-6">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                    <svg class="w-7 h-7 text-[#528FB9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-black text-black" x-text="questions.length"></div>
+                                    <div class="text-sm font-bold text-gray-400">Questions</div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 flex items-center gap-6">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                    <svg class="w-7 h-7 text-[#528FB9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <template x-if="time_limit_minutes">
+                                        <div class="text-2xl font-black text-black" x-text="time_limit_minutes + 'm'"></div>
+                                    </template>
+                                    <template x-if="!time_limit_minutes">
+                                        <div class="text-2xl font-black text-black py-1">
+                                            <svg class="w-10 h-10 text-[#528FB9]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path d="M18.121 8.879a3 3 0 10-4.242 4.242 3 3 0 004.242-4.242zM5.879 15.121a3 3 0 104.242-4.242 3 3 0 00-4.242 4.242z" />
+                                                <path d="M13.879 13.121l-3.758-2.242M13.879 10.879l-3.758 2.242" />
+                                            </svg>
+                                        </div>
+                                    </template>
+                                    <div class="text-sm font-bold text-gray-400">Time Limit</div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 flex items-center gap-6">
+                                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                    <svg class="w-7 h-7 text-[#528FB9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-black text-black" x-text="access === 'public' ? 'Public' : 'Private'"></div>
+                                    <div class="text-sm font-bold text-gray-400">Access</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-12">
+                            <h3 class="text-xl font-extrabold text-black mb-4">Description</h3>
+                            <p class="text-gray-500 leading-relaxed text-lg" x-text="description || 'No description provided.'"></p>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-12">
+                            <h3 class="text-xl font-extrabold text-black mb-4">Tags</h3>
+                            <div class="flex flex-wrap gap-3">
+                                <template x-for="tag in tags" :key="tag">
+                                    <span class="px-5 py-2.5 bg-[#eef8fc] text-[#528FB9] rounded-full text-sm font-bold" x-text="tag"></span>
+                                </template>
+                                <template x-if="tags.length === 0">
+                                    <span class="text-gray-400 italic">No tags selected.</span>
+                                </template>
                             </div>
                         </div>
                     </div>
                 </div>
-            </template>
+
+                <!-- Footer Navigation -->
+                <div class="mt-12 flex flex-col gap-6 items-center">
+                    <button 
+                        type="button" 
+                        @click="submitQuizForm('draft')"
+                        class="w-full bg-[#eef8fc] border-2 border-[#528FB9] text-[#528FB9] py-8 rounded-[32px] text-xl font-black shadow-sm hover:bg-[#dff0f8] transition"
+                    >
+                        Save as Draft
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="submitQuizForm('published')"
+                        class="w-full bg-[#528FB9] text-white py-8 rounded-[32px] text-xl font-black shadow-xl hover:bg-[#3E779F] hover:shadow-2xl hover:-translate-y-1 transform transition-all"
+                    >
+                        Publish Quiz
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="step = 2"
+                        class="w-full bg-white border-2 border-gray-100 text-gray-400 py-8 rounded-[32px] text-xl font-black shadow-sm hover:bg-gray-50 transition"
+                    >
+                        Back to Questions
+                    </button>
+                </div>
+            </div>
         </form>
-
-<!-- FORM DELETE DI LUAR -->
-@if($quiz->exists)
-    <form 
-        id="deleteQuizForm"
-        action="{{ route('my-quizzes.destroy', $quiz) }}" 
-        method="POST"
-        onsubmit="clearAllQuizDrafts(); return confirm('Delete this quiz permanently?');"
-    >
-        @csrf
-        @method('DELETE')
-    </form>
-@endif
     </div>
-</div>
 
-<div id="leaveModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
-    <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl">
-        <h3 id="leaveModalTitle" class="text-lg font-bold text-gray-900">Leave this quiz form?</h3>
-        <p id="leaveModalText" class="mt-2 text-sm text-gray-600">
-            You have unsaved changes. Save them as draft, discard them, or stay on this page.
-        </p>
+    <!-- VALIDATION MODAL -->
+    <div 
+        x-show="showValidationModal" 
+        x-cloak
+        class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+        @click.self="showValidationModal = false"
+    >
+        <div class="w-full max-w-md rounded-[32px] bg-white p-10 shadow-2xl">
+            <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-8 mx-auto">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 14c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            
+            <h3 class="text-2xl font-black text-black mb-4 text-center">Incomplete Data</h3>
+            <p class="text-gray-500 text-center mb-8">Please fix the following issues before publishing:</p>
+            
+            <div class="space-y-4 mb-10">
+                <template x-for="err in validationErrors" :key="err.msg">
+                    <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
+                        <div class="w-2 h-2 mt-2 rounded-full bg-red-500"></div>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold text-black" x-text="err.msg"></div>
+                            <button @click="step = err.targetStep; showValidationModal = false" class="text-xs font-bold text-[#528FB9] hover:underline mt-1">
+                                Go to <span x-text="err.targetStep === 1 ? 'Detail Stage' : 'Questions Stage'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
 
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-                type="button"
-                onclick="saveDraftThenLeave()"
-                class="rounded-xl bg-[#104876] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1a5a8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/30"
+            <button 
+                type="button" 
+                @click="showValidationModal = false"
+                class="w-full py-4 rounded-full bg-gray-100 text-sm font-bold text-black transition hover:bg-gray-200"
             >
-                Save Draft
+                Close
             </button>
+        </div>
+    </div>
 
-            <button
-                type="button"
-                onclick="proceedLeaveWithoutSave()"
-                class="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-            >
-                Discard
-            </button>
-
-            <button
-                type="button"
-                onclick="closeLeaveModal()"
-                class="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-            >
-                Cancel
-            </button>
+    <!-- CANCEL POPUP -->
+    <div 
+        x-show="showCancelModal" 
+        x-cloak
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+        @click.self="showCancelModal = false"
+    >
+        <div class="w-full max-w-sm rounded-[32px] bg-white p-10 shadow-2xl text-center">
+            <h3 class="text-xl font-extrabold text-black mb-8">Are you sure you want to cancel?</h3>
+            
+            <div class="flex flex-col gap-4">
+                <button 
+                    type="button" 
+                    @click="discardQuiz"
+                    class="w-full rounded-full border border-red-500 bg-white py-4 text-sm font-bold text-red-500 transition hover:bg-red-50 shadow-sm"
+                >
+                    Discard Quiz
+                </button>
+                <button 
+                    type="button" 
+                    @click="saveAsDraftAndExit"
+                    class="w-full rounded-full bg-[#528FB9] py-4 text-sm font-bold text-white transition hover:bg-[#3E779F] shadow-md"
+                >
+                    Save as Draft
+                </button>
+                <button 
+                    type="button" 
+                    @click="showCancelModal = false"
+                    class="w-full py-2 text-sm font-bold text-gray-400 hover:text-black transition"
+                >
+                    Back to edit
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const isEdit = @json($isEdit);
-    const draftKey = @json($draftKey);
-    const hasServerErrors = @json($errors->any());
-    const originalQuizState = @json($originalQuizState);
+    function submitQuizForm(vis) {
+        const handler = Alpine.$data(document.querySelector('[x-data]'));
+        
+        // Validation for published quiz
+        if (vis === 'published') {
+            handler.validationErrors = [];
 
-    const quizForm = document.getElementById('quizForm');
-    const questionsList = document.getElementById('questionsList');
-    const leaveModal = document.getElementById('leaveModal');
-    const leaveModalText = document.getElementById('leaveModalText');
-
-    let questionIndex = getNextQuestionIndex();
-    let saveTimer = null;
-    let dirty = false;
-    let isSubmitting = false;
-    let pendingNavigationUrl = null;
-    let skipDraftSave = false;
-
-    function clearAllQuizDrafts() {
-        Object.keys(localStorage).forEach((key) => {
-            if (key.startsWith('pensquiz-quiz-draft-v5-')) {
-                localStorage.removeItem(key);
-            }
-        });
-    }
-
-    function clearLegacyDrafts() {
-        Object.keys(localStorage).forEach((key) => {
-            if (key.startsWith('pensquiz-quiz-draft-v3-') || key.startsWith('pensquiz-quiz-draft-v4-')) {
-                localStorage.removeItem(key);
-            }
-        });
-    }
-
-    function clearDraftState() {
-        localStorage.removeItem(draftKey);
-    }
-
-    function openLeaveModal(url) {
-        pendingNavigationUrl = url;
-
-        if (leaveModalText) {
-            leaveModalText.textContent = isEdit
-                ? 'You have unsaved changes. Save them as draft, discard the changes, or stay on this page.'
-                : 'You have unsaved progress. Save it as draft, discard it, or stay on this page.';
-        }
-
-        if (leaveModal) {
-            leaveModal.classList.remove('hidden');
-            leaveModal.classList.add('flex');
-        }
-    }
-
-    function closeLeaveModal() {
-        pendingNavigationUrl = null;
-
-        if (leaveModal) {
-            leaveModal.classList.add('hidden');
-            leaveModal.classList.remove('flex');
-        }
-    }
-
-    function applyCoverPreview(url) {
-        const preview = document.getElementById('coverPreview');
-        const placeholder = document.getElementById('coverPlaceholder');
-
-        if (!preview || !placeholder) return;
-
-        if (url) {
-            preview.src = url;
-            preview.classList.remove('hidden');
-            placeholder.classList.add('hidden');
-        } else {
-            preview.src = '';
-            preview.classList.add('hidden');
-            placeholder.classList.remove('hidden');
-        }
-    }
-
-    function applyQuizState(state) {
-        if (!state) return;
-
-        const titleInput = document.getElementById('quizTitleInput');
-        const descriptionInput = document.getElementById('quizDescriptionInput');
-        const courseSelect = document.getElementById('courseSelect');
-        const semesterInput = document.getElementById('semesterInput');
-        const accessSelect = document.getElementById('accessSelect');
-        const visibilityInput = document.getElementById('visibilityInput');
-        const allowCopyInput = document.getElementById('allowCopyInput');
-        const removeCoverInput = document.getElementById('removeCoverInput');
-        const list = document.getElementById('questionsList');
-
-        if (titleInput && state.title !== undefined) titleInput.value = state.title ?? '';
-        if (descriptionInput && state.description !== undefined) descriptionInput.value = state.description ?? '';
-        if (courseSelect && state.course_id !== undefined) courseSelect.value = state.course_id ?? '';
-        if (semesterInput && state.semester !== undefined) semesterInput.value = state.semester ?? '';
-        if (accessSelect && state.access !== undefined) accessSelect.value = state.access ?? 'private';
-        if (visibilityInput && state.visibility !== undefined) visibilityInput.value = state.visibility ?? 'draft';
-        if (allowCopyInput && state.allow_copy !== undefined) allowCopyInput.checked = !!state.allow_copy;
-        if (removeCoverInput) removeCoverInput.value = '0';
-        if (state.cover_image_url !== undefined) applyCoverPreview(state.cover_image_url);
-
-        if (list && Array.isArray(state.questions)) {
-            list.innerHTML = state.questions.map((question, index) => buildQuestionCard(index, question)).join('');
-        }
-
-        updateQuestionNumbers();
-        updateSummary();
-        questionIndex = getNextQuestionIndex();
-    }
-
-    function resetCreateForm() {
-        if (!confirm('Discard all progress?')) return;
-
-        skipDraftSave = true;
-        clearAllQuizDrafts();
-        dirty = false;
-        window.location.href = @json(route('my-quizzes.create'));
-    }
-
-    function discardChanges() {
-        if (isEdit) {
-            if (!confirm('Discard all changes and restore the quiz to the saved database version?')) return;
-
-            skipDraftSave = true;
-            clearDraftState();
-            dirty = false;
-            applyQuizState(originalQuizState);
-            updateSummary();
-            return;
-        }
-
-        resetCreateForm();
-    }
-
-    function proceedLeaveWithoutSave() {
-        if (!pendingNavigationUrl) return;
-
-        clearDraftState();
-        dirty = false;
-        window.location.href = pendingNavigationUrl;
-    }
-
-    function saveDraftThenLeave() {
-        if (!pendingNavigationUrl) return;
-
-        submitQuizForm('draft');
-    }
-
-    function setVisibility(value) {
-        const visibilityInput = document.getElementById('visibilityInput');
-        if (visibilityInput) {
-            visibilityInput.value = value;
-        }
-
-        updateSummary();
-        markDirty();
-    }
-
-    function removeCover() {
-        const removeCoverInput = document.getElementById('removeCoverInput');
-        if (removeCoverInput) {
-            removeCoverInput.value = '1';
-        }
-
-        applyCoverPreview('');
-        markDirty();
-        updateSummary();
-    }
-
-    document.getElementById('coverInput')?.addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const preview = document.getElementById('coverPreview');
-        const placeholder = document.getElementById('coverPlaceholder');
-        const reader = new FileReader();
-
-        reader.onload = function (e) {
-            if (preview) {
-                preview.src = e.target.result;
-                preview.classList.remove('hidden');
+            // 1. Detail Fields (except description)
+            if (!handler.title || !handler.major_id || !handler.course_id || !handler.access) {
+                handler.validationErrors.push({ msg: 'Basic quiz details are incomplete (Title, Major, Course, etc.)', targetStep: 1 });
             }
 
-            if (placeholder) {
-                placeholder.classList.add('hidden');
+            // 2. Questions Validation
+            for (let i = 0; i < handler.questions.length; i++) {
+                const q = handler.questions[i];
+                
+                if (!q.content.trim()) {
+                    handler.validationErrors.push({ msg: `Question ${i + 1} content is empty.`, targetStep: 2 });
+                }
+
+                if (q.type === 'checkbox') {
+                    if (q.correct_options.length < 2) {
+                        handler.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 2 correct answers.`, targetStep: 2 });
+                    }
+                    if (q.options.length < 3) {
+                        handler.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 3 choices.`, targetStep: 2 });
+                    }
+                }
+
+                const correctCount = q.type === 'checkbox' ? q.correct_options.length : 1;
+                if (q.options.length <= correctCount) {
+                    handler.validationErrors.push({ msg: `Question ${i + 1} must have more choices than correct answers.`, targetStep: 2 });
+                }
+
+                if (q.options.some(opt => !opt.content.trim())) {
+                    handler.validationErrors.push({ msg: `Question ${i + 1} has empty choices.`, targetStep: 2 });
+                }
             }
 
-            const removeCoverInput = document.getElementById('removeCoverInput');
-            if (removeCoverInput) {
-                removeCoverInput.value = '0';
+            if (handler.validationErrors.length > 0) {
+                handler.showValidationModal = true;
+                return;
             }
-
-            markDirty();
-            updateSummary();
-        };
-
-        reader.readAsDataURL(file);
-    });
-
-    function buildOptionRow(questionIndexValue, optionIndex, questionType, optionData = {}) {
-        const inputType = questionType === 'multiple_answer' ? 'checkbox' : 'radio';
-        const inputName = questionType === 'multiple_answer'
-            ? `questions[${questionIndexValue}][correct_options][]`
-            : `questions[${questionIndexValue}][correct_option]`;
-
-        const content = optionData.content ?? '';
-        const checked = optionData.checked ?? (optionIndex === 0 && questionType === 'single_answer');
-        const optionId = optionData.id_option ?? '';
-
-        return `
-            <div class="option-row flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                <input type="hidden" name="questions[${questionIndexValue}][options][${optionIndex}][id_option]" value="${escapeHtml(optionId)}">
-
-                <div data-correct-control class="mt-1">
-                    <input
-                        type="${inputType}"
-                        name="${inputName}"
-                        value="${optionIndex}"
-                        class="h-4 w-4 cursor-pointer text-[#104876] focus:ring-[#104876]"
-                        ${checked ? 'checked' : ''}
-                    >
-                </div>
-
-                <input
-                    type="text"
-                    name="questions[${questionIndexValue}][options][${optionIndex}][content]"
-                    value="${escapeHtml(content)}"
-                    placeholder="Option ${optionIndex + 1}"
-                    class="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                >
-
-                <button
-                    type="button"
-                    onclick="removeOption(this)"
-                    class="cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                >
-                    ×
-                </button>
-            </div>
-        `;
-    }
-
-    function buildQuestionCard(index, data = null) {
-        const type = data?.type || 'single_answer';
-        const questionId = data?.id_question || '';
-        const content = data?.content || '';
-        const explanation = data?.explanation || '';
-        const options = Array.isArray(data?.options) && data.options.length
-            ? data.options
-            : [
-                { content: '' },
-                { content: '' },
-                { content: '' },
-                { content: '' },
-            ];
-
-        const correctOption = data?.correct_option ?? '0';
-        const correctOptions = Array.isArray(data?.correct_options) ? data.correct_options.map(String) : [];
-
-        const optionRows = options.map((option, oIndex) => {
-            const checked = type === 'multiple_answer'
-                ? correctOptions.includes(String(oIndex))
-                : String(correctOption) === String(oIndex);
-
-            return buildOptionRow(index, oIndex, type, {
-                id_option: option.id_option ?? '',
-                content: option.content ?? '',
-                checked: checked,
-            });
-        }).join('');
-
-        return `
-            <div class="question-card rounded-[18px] border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md" data-question-card data-question-index="${index}">
-                <input type="hidden" name="questions[${index}][id_question]" value="${escapeHtml(questionId)}">
-
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <span data-question-number class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#104876] text-sm font-bold text-white">${index + 1}</span>
-
-                        <select
-                            name="questions[${index}][type]"
-                            class="question-type-select cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                            onchange="toggleQuestionType(this)"
-                        >
-                            <option value="single_answer" ${type === 'single_answer' ? 'selected' : ''}>Single Answer</option>
-                            <option value="multiple_answer" ${type === 'multiple_answer' ? 'selected' : ''}>Multiple Answer</option>
-                        </select>
-                    </div>
-
-                    <button
-                        type="button"
-                        onclick="removeQuestion(this)"
-                        class="cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                    >
-                        Delete
-                    </button>
-                </div>
-
-                <div class="mt-4 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-800">Question</label>
-                        <textarea
-                            name="questions[${index}][content]"
-                            rows="3"
-                            placeholder="Write the question here..."
-                            class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                        >${escapeHtml(content)}</textarea>
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-800">Explanation / Rubric</label>
-                        <textarea
-                            name="questions[${index}][explanation]"
-                            rows="2"
-                            placeholder="Optional explanation..."
-                            class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#104876] focus:ring-2 focus:ring-[#104876]/20 focus:outline-none"
-                        >${escapeHtml(explanation)}</textarea>
-                    </div>
-
-                    <div data-options-wrapper class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold uppercase tracking-wide text-gray-700">
-                                ${type === 'multiple_answer' ? 'Select all correct answers' : 'Choose one correct answer'}
-                            </span>
-
-                            <button
-                                type="button"
-                                onclick="addOption(this)"
-                                class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#104876]/20"
-                            >
-                                + Option
-                            </button>
-                        </div>
-
-                        <div data-options-list class="space-y-2">
-                            ${optionRows}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function addQuestionTop() {
-        questionsList.insertAdjacentHTML('afterbegin', buildQuestionCard(questionIndex));
-        questionIndex++;
-        updateQuestionNumbers();
-        updateSummary();
-        markDirty();
-        saveDraftState();
-    }
-
-    function removeQuestion(button) {
-        const card = button.closest('[data-question-card]');
-        if (card) {
-            card.remove();
         }
 
-        reindexQuestions();
-        updateQuestionNumbers();
-        updateSummary();
-        markDirty();
-        saveDraftState();
+        handler.visibility = vis;
+        handler.isDirty = false;
+        document.getElementById('quizForm').submit();
     }
 
-    function addOption(button) {
-        const card = button.closest('[data-question-card]');
-        if (!card) return;
+    function quizFormHandler() {
+        return {
+            step: 1,
+            showCancelModal: false,
+            showValidationModal: false,
+            validationErrors: [],
+            isDirty: false,
+            pendingUrl: null,
+            
+            // Detail Fields
+            title: '{{ old("title", $quiz->title ?? "") }}',
+            major_id: '{{ old("major_id", $quiz->major_id ?? "") }}',
+            course_id: '{{ old("course_id", $quiz->course_id ?? "") }}',
+            description: '{{ old("description", $quiz->description ?? "") }}',
+            time_limit_minutes: '{{ old("time_limit_minutes", $quiz->time_limit_minutes ?? "") }}',
+            access: '{{ old("access", $quiz->access ?? "private") }}',
+            allow_copy: {{ old("allow_copy", $quiz->allow_copy ?? false) ? 'true' : 'false' }},
 
-        const qIndex = card.dataset.questionIndex;
-        const list = card.querySelector('[data-options-list]');
-        const optionIndex = list.querySelectorAll('.option-row').length;
-        const type = card.querySelector('.question-type-select')?.value || 'single_answer';
+            // Major/Course Data for Summary
+            majors: {!! json_encode($majors->map(fn($m) => ['id' => $m->id, 'name' => $m->name])) !!},
+            courses: {!! json_encode($courses->map(fn($c) => ['id' => $c->id, 'name' => $c->name])) !!},
 
-        list.insertAdjacentHTML('beforeend', buildOptionRow(qIndex, optionIndex, type));
-        updateSummary();
-        markDirty();
-        saveDraftState();
-    }
+            // Questions System (Alpine Managed)
+            questions: {!! json_encode($questionsData) !!},
 
-    function removeOption(button) {
-        const row = button.closest('.option-row');
-        if (row) {
-            row.remove();
-        }
+            init() {
+                this.$watch('title', () => this.isDirty = true);
+                this.$watch('description', () => this.isDirty = true);
+                this.$watch('time_limit_minutes', () => this.isDirty = true);
+                this.$watch('allow_copy', () => this.isDirty = true);
+                this.$watch('tags', () => this.isDirty = true);
+                this.$watch('questions', () => this.isDirty = true, { deep: true });
 
-        reindexQuestions();
-        updateSummary();
-        markDirty();
-        saveDraftState();
-    }
-
-    function syncOptionControls(card) {
-        if (!card) return;
-
-        const type = card.querySelector('.question-type-select')?.value || 'single_answer';
-        const qIndex = card.dataset.questionIndex;
-        const rows = Array.from(card.querySelectorAll('.option-row'));
-
-        const checkedIndices = rows
-            .map((row, idx) => {
-                const currentInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
-                return currentInput?.checked ? idx : null;
-            })
-            .filter((value) => value !== null);
-
-        rows.forEach((row, idx) => {
-            const currentControl = row.querySelector('[data-correct-control]');
-            if (!currentControl) return;
-
-            currentControl.innerHTML = '';
-
-            const input = document.createElement('input');
-            input.type = type === 'multiple_answer' ? 'checkbox' : 'radio';
-            input.name = type === 'multiple_answer'
-                ? `questions[${qIndex}][correct_options][]`
-                : `questions[${qIndex}][correct_option]`;
-            input.value = idx;
-            input.className = 'h-4 w-4 cursor-pointer text-[#104876] focus:ring-[#104876]';
-
-            if (type === 'multiple_answer') {
-                input.checked = checkedIndices.includes(idx);
-            } else {
-                input.checked = (checkedIndices[0] ?? 0) === idx;
-            }
-
-            currentControl.appendChild(input);
-        });
-
-        const label = card.querySelector('[data-options-wrapper] span');
-        if (label) {
-            label.textContent = type === 'multiple_answer'
-                ? 'Select all correct answers'
-                : 'Choose one correct answer';
-        }
-    }
-
-    function toggleQuestionType(select) {
-        const card = select.closest('[data-question-card]');
-        syncOptionControls(card);
-        updateSummary();
-        markDirty();
-        saveDraftState();
-    }
-
-    function reindexQuestions() {
-        const cards = document.querySelectorAll('[data-question-card]');
-
-        cards.forEach((card, qIndex) => {
-            card.dataset.questionIndex = qIndex;
-
-            card.querySelectorAll('[name]').forEach((el) => {
-                el.name = el.name.replace(/questions\[\d+\]/, `questions[${qIndex}]`);
-            });
-
-            const optionRows = card.querySelectorAll('.option-row');
-            optionRows.forEach((row, oIndex) => {
-                row.querySelectorAll('[name]').forEach((el) => {
-                    el.name = el.name
-                        .replace(/questions\[\d+\]/, `questions[${qIndex}]`)
-                        .replace(/options\[\d+\]/, `options[${oIndex}]`);
+                this.$watch('step', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
 
-                const input = row.querySelector('input[type="radio"], input[type="checkbox"]');
-                if (input) input.value = oIndex;
-            });
-        });
-    }
+                // Intercept navigation
+                document.addEventListener('click', (e) => {
+                    const link = e.target.closest('a');
+                    if (link && this.isDirty && !this.isSubmitLink(link)) {
+                        e.preventDefault();
+                        this.pendingUrl = link.href;
+                        this.showCancelModal = true;
+                    }
+                });
 
-    function updateQuestionNumbers() {
-        const cards = document.querySelectorAll('[data-question-card]');
-        cards.forEach((card, idx) => {
-            card.dataset.questionIndex = idx;
-            const number = card.querySelector('[data-question-number]');
-            if (number) {
-                number.textContent = idx + 1;
+                // Browser back/refresh warning
+                window.onbeforeunload = () => {
+                    if (this.isDirty) return "You have unsaved changes!";
+                };
+            },
+
+            isSubmitLink(link) {
+                return link.closest('#quizForm') !== null || link.getAttribute('href').startsWith('javascript:');
+            },
+
+            // Tags System
+            tagSearch: '',
+            tags: {!! json_encode(old('tags', $quiz->tags->pluck('name')->toArray())) !!},
+            allTags: {!! json_encode($allTags) !!},
+            tagRecs: [],
+            showTagRecs: false,
+
+            handleTagSearch() {
+                if (this.tagSearch.length < 1) {
+                    this.showTagRecs = false;
+                    return;
+                }
+                const term = this.tagSearch.toLowerCase();
+                this.tagRecs = this.allTags.filter(t => 
+                    t.toLowerCase().includes(term) && !this.tags.map(v => v.toLowerCase()).includes(t.toLowerCase())
+                ).slice(0, 5);
+                this.showTagRecs = true;
+            },
+
+            addTag(tag) {
+                const normalized = tag.trim().toLowerCase();
+                if (normalized && !this.tags.includes(normalized)) {
+                    this.tags.push(normalized);
+                    this.isDirty = true;
+                }
+                this.tagSearch = '';
+                this.showTagRecs = false;
+            },
+
+            removeTag(index) {
+                this.tags.splice(index, 1);
+                this.isDirty = true;
+            },
+
+            discardQuiz() {
+                this.isDirty = false;
+                window.location.href = this.pendingUrl || "{{ route('my-quizzes.index') }}";
+            },
+
+            saveAsDraftAndExit() {
+                this.isDirty = false;
+                this.visibility = 'draft';
+                this.$nextTick(() => {
+                    document.getElementById('quizForm').submit();
+                });
+            },
+
+            // Question Helpers
+            addQuestion(afterIdx = null) {
+                const newQuestion = {
+                    type: 'multiple_choice',
+                    content: '',
+                    options: [
+                        { content: '', id_option: null },
+                        { content: '', id_option: null },
+                        { content: '', id_option: null },
+                        { content: '', id_option: null }
+                    ],
+                    correct_option: 0,
+                    correct_options: [0]
+                };
+
+                if (afterIdx !== null) {
+                    this.questions.splice(afterIdx + 1, 0, newQuestion);
+                } else {
+                    this.questions.push(newQuestion);
+                }
+                this.isDirty = true;
+            },
+
+            addOption(qIdx) {
+                this.questions[qIdx].options.push({ content: '', id_option: null });
+            },
+
+            removeOption(qIdx, oIdx) {
+                if (this.questions[qIdx].options.length <= 2) return;
+                this.questions[qIdx].options.splice(oIdx, 1);
+                
+                // Update correct answer indices if needed
+                if (this.questions[qIdx].type === 'multiple_choice') {
+                    if (this.questions[qIdx].correct_option >= oIdx) {
+                        this.questions[qIdx].correct_option = Math.max(0, this.questions[qIdx].correct_option - 1);
+                    }
+                } else {
+                    this.questions[qIdx].correct_options = this.questions[qIdx].correct_options
+                        .filter(idx => idx !== oIdx)
+                        .map(idx => idx > oIdx ? idx - 1 : idx);
+                }
+            },
+
+            // Summary Helpers
+            getSelectedMajorName() {
+                const major = this.majors.find(m => m.id == this.major_id);
+                return major ? major.name : '';
+            },
+
+            getSelectedCourseName() {
+                const course = this.courses.find(c => c.id == this.course_id);
+                return course ? course.name : '';
+            },
+
+            goToSummary() {
+                this.step = 3;
             }
-        });
-
-        const count = cards.length;
-        const badge = document.getElementById('questionCountBadge');
-        const summaryCount = document.getElementById('summaryQuestionCount');
-
-        if (badge) badge.textContent = `${count} Questions`;
-        if (summaryCount) summaryCount.textContent = count;
-
-        questionIndex = cards.length;
-    }
-
-    function updateSummary() {
-        const titleInput = document.getElementById('quizTitleInput');
-        const courseSelect = document.getElementById('courseSelect');
-        const semesterInput = document.getElementById('semesterInput');
-        const accessSelect = document.getElementById('accessSelect');
-        const visibilityInput = document.getElementById('visibilityInput');
-        const allowCopyInput = document.getElementById('allowCopyInput');
-
-        const summaryTitle = document.getElementById('summaryTitle');
-        const summaryCourse = document.getElementById('summaryCourse');
-        const summarySemester = document.getElementById('summarySemester');
-        const summaryAccess = document.getElementById('summaryAccess');
-        const summaryVisibility = document.getElementById('summaryVisibility');
-        const summaryAllowCopy = document.getElementById('summaryAllowCopy');
-        const summaryQuestionCount = document.getElementById('summaryQuestionCount');
-        const questionCountBadge = document.getElementById('questionCountBadge');
-
-        if (summaryTitle) summaryTitle.textContent = titleInput?.value?.trim() || '—';
-
-        if (summaryCourse) {
-            const selectedText = courseSelect?.selectedOptions?.[0]?.text?.trim();
-            summaryCourse.textContent = selectedText || 'No course';
-        }
-
-        if (summarySemester) summarySemester.textContent = semesterInput?.value || '—';
-
-        if (summaryAccess) {
-            const value = accessSelect?.value || '';
-            summaryAccess.textContent = value ? value.charAt(0).toUpperCase() + value.slice(1) : '—';
-        }
-
-        if (summaryVisibility) {
-            const value = visibilityInput?.value || '';
-            summaryVisibility.textContent = value ? value.charAt(0).toUpperCase() + value.slice(1) : '—';
-        }
-
-        if (summaryAllowCopy) {
-            summaryAllowCopy.textContent = allowCopyInput?.checked ? 'Enabled' : 'Disabled';
-        }
-
-        const cards = document.querySelectorAll('[data-question-card]');
-        const count = cards.length;
-
-        if (summaryQuestionCount) summaryQuestionCount.textContent = count;
-        if (questionCountBadge) questionCountBadge.textContent = `${count} Questions`;
-    }
-
-    function markDirty() {
-        dirty = true;
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(saveDraftState, 250);
-    }
-
-    function collectQuestionData() {
-        return Array.from(document.querySelectorAll('[data-question-card]')).map((card) => {
-            const type = card.querySelector('.question-type-select')?.value || 'single_answer';
-            const questionId = card.querySelector('input[name$="[id_question]"]')?.value || '';
-            const content = card.querySelector('textarea[name$="[content]"]')?.value || '';
-            const explanation = card.querySelector('textarea[name$="[explanation]"]')?.value || '';
-
-            const options = Array.from(card.querySelectorAll('.option-row')).map((row) => ({
-                id_option: row.querySelector('input[type="hidden"][name*="[id_option]"]')?.value || '',
-                content: row.querySelector('input[type="text"]')?.value || '',
-                checked: row.querySelector('input[type="radio"], input[type="checkbox"]')?.checked || false,
-            }));
-
-            const correctOptions = options
-                .map((opt, idx) => opt.checked ? String(idx) : null)
-                .filter(Boolean);
-
-            return {
-                id_question: questionId,
-                type,
-                content,
-                explanation,
-                correct_option: correctOptions[0] ?? '0',
-                correct_options: correctOptions,
-                options: options.map(({ id_option, content }) => ({
-                    id_option,
-                    content,
-                })),
-            };
-        });
-    }
-
-    function saveDraftState() {
-        const payload = {
-            title: document.getElementById('quizTitleInput')?.value || '',
-            description: document.getElementById('quizDescriptionInput')?.value || '',
-            course_id: document.getElementById('courseSelect')?.value || '',
-            semester: document.getElementById('semesterInput')?.value || '',
-            access: document.getElementById('accessSelect')?.value || 'private',
-            visibility: document.getElementById('visibilityInput')?.value || 'draft',
-            allow_copy: document.getElementById('allowCopyInput')?.checked ? 1 : 0,
-            questions: collectQuestionData(),
         };
-
-        localStorage.setItem(draftKey, JSON.stringify(payload));
-    }
-
-    function restoreDraftState() {
-        const raw = localStorage.getItem(draftKey);
-        if (!raw) return;
-
-        try {
-            const payload = JSON.parse(raw);
-            const questions = Array.isArray(payload.questions) ? payload.questions : [];
-
-            if (isEdit && questions.length > 0) {
-                const validEditDraft = questions.every((q) => q && q.id_question);
-                if (!validEditDraft) return;
-            }
-
-            applyQuizState({
-                title: payload.title ?? '',
-                description: payload.description ?? '',
-                course_id: payload.course_id ?? '',
-                semester: payload.semester ?? '',
-                access: payload.access ?? 'private',
-                visibility: payload.visibility ?? 'draft',
-                allow_copy: !!Number(payload.allow_copy ?? 0),
-                questions: questions,
-            });
-
-            markDirty();
-        } catch (e) {
-            console.error('Invalid draft data', e);
-        }
-    }
-
-    function getNextQuestionIndex() {
-        const cards = document.querySelectorAll('[data-question-card]');
-        if (!cards.length) return 0;
-
-        let max = -1;
-        cards.forEach(card => {
-            const idx = parseInt(card.dataset.questionIndex || '0', 10);
-            if (!Number.isNaN(idx)) {
-                max = Math.max(max, idx);
-            }
-        });
-
-        return max + 1;
-    }
-
-    function submitQuizForm(visibility) {
-        if (!quizForm || isSubmitting) return;
-
-        setVisibility(visibility);
-        saveDraftState();
-        skipDraftSave = true;
-        isSubmitting = true;
-
-        quizForm.requestSubmit();
-    }
-
-    function shouldInterceptLink(anchor) {
-        if (!anchor || !anchor.href) return false;
-
-        const href = anchor.getAttribute('href') || '';
-        if (!href || href.startsWith('#')) return false;
-        if (anchor.target === '_blank') return false;
-        if (anchor.hasAttribute('download')) return false;
-
-        const url = new URL(anchor.href, window.location.origin);
-        if (url.origin !== window.location.origin) return false;
-
-        return true;
-    }
-
-    document.addEventListener('click', function (event) {
-        const anchor = event.target.closest('a[href]');
-        if (!anchor) return;
-        if (isSubmitting || !dirty) return;
-
-        if (!shouldInterceptLink(anchor)) return;
-
-        event.preventDefault();
-        openLeaveModal(anchor.href);
-    }, true);
-
-    quizForm?.addEventListener('submit', function () {
-        isSubmitting = true;
-    });
-
-    quizForm?.addEventListener('input', function () {
-        updateSummary();
-        markDirty();
-    });
-
-    quizForm?.addEventListener('change', function () {
-        updateSummary();
-        markDirty();
-    });
-
-    window.addEventListener('beforeunload', function () {
-        if (skipDraftSave || isSubmitting) return;
-        if (dirty) saveDraftState();
-    });
-
-    window.addEventListener('pagehide', function () {
-        if (skipDraftSave || isSubmitting) return;
-        if (dirty) saveDraftState();
-    });
-
-    clearLegacyDrafts();
-
-    if (!hasServerErrors) {
-        restoreDraftState();
-    }else {
-        updateQuestionNumbers();
-        updateSummary();
-    }
-
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
     }
 </script>
 
-@if(session('clearDraftKey'))
-<script>
-    localStorage.removeItem(@json(session('clearDraftKey')));
-</script>
-@endif
-
-
+<style>
+    [x-cloak] { display: none !important; }
+</style>
 </x-app-layout>

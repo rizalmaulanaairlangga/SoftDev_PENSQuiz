@@ -34,6 +34,8 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id_user, 'id_user'),
             ],
+            'major_id' => ['nullable', 'exists:majors,id_major'],
+            'year_of_entry' => ['nullable', 'integer', 'min:2000', 'max:' . date('Y')],
         ];
     }
 }

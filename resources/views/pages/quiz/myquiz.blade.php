@@ -75,33 +75,9 @@
         </div>
     </div>
 
-    @if(!request('search') && empty($filterTags))
-    <!-- STATS -->
-    <div class="grid grid-cols-4 gap-6 mb-10">
-        <div class="rounded-xl p-6 text-center shadow-md bg-gradient-to-br from-[#528FB9] to-[#80c0e5] text-white hover:scale-105 hover:shadow-lg transition duration-300">
-            <p class="text-4xl font-bold mb-2">{{ $totalQuizzes }}</p>
-            <p class="text-blue-50 text-sm font-medium uppercase tracking-wider">Quizzes Created</p>
-        </div>
-
-        <div class="rounded-xl p-6 text-center shadow-md bg-gradient-to-br from-[#68a0c7] to-[#A6D9F0] text-white hover:scale-105 hover:shadow-lg transition duration-300">
-            <p class="text-4xl font-bold mb-2">{{ $totalQuestions }}</p>
-            <p class="text-blue-50 text-sm font-medium uppercase tracking-wider">Total Questions</p>
-        </div>
-
-        <div class="rounded-xl p-6 text-center shadow-md bg-gradient-to-br from-[#5b97c0] to-[#91cdef] text-white hover:scale-105 hover:shadow-lg transition duration-300">
-            <p class="text-4xl font-bold mb-2">{{ $totalAttempts }}</p>
-            <p class="text-blue-50 text-sm font-medium uppercase tracking-wider">Attempts</p>
-        </div>
-
-        <div class="rounded-xl p-6 text-center shadow-md bg-gradient-to-br from-[#4d8ab3] to-[#76b7df] text-white hover:scale-105 hover:shadow-lg transition duration-300">
-            <p class="text-4xl font-bold mb-2">{{ $completionRate }}%</p>
-            <p class="text-blue-50 text-sm font-medium uppercase tracking-wider">Completion Rate</p>
-        </div>
-    </div>
-    @endif
 
     <!-- FOLDERS -->
-    <div id="folders-section" class="mb-10 scroll-mt-24">
+    <div id="folders-section" class="mb-10 scroll-mt-40">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-bold text-gray-800">Folders</h2>
             <button @click="folderModal = true" class="bg-[#528FB9] text-white px-5 py-2 rounded-full font-medium hover:bg-[#3E779F] transition shadow-sm flex items-center gap-2">
@@ -113,7 +89,7 @@
         <!-- Folder List -->
         <div class="grid grid-cols-2 gap-4 max-h-[220px] overflow-y-auto px-2 custom-scrollbar overflow-x-visible">
             @foreach($folders as $folder)
-                <div class="flex items-center gap-4 bg-[#f8fafc] p-4 rounded-xl border border-gray-200 hover:shadow-lg hover:shadow-[#528FB9]/50 hover:border-[#A6D9F0] transition duration-300 cursor-pointer">
+                <a href="{{ route('folders.show', $folder) }}" class="flex items-center gap-4 bg-[#f8fafc] p-4 rounded-xl border border-gray-200 hover:shadow-lg hover:shadow-[#528FB9]/50 hover:border-[#A6D9F0] transition duration-300 cursor-pointer block">
                     <div class="w-16 h-16 flex-shrink-0 relative">
                         <img src="{{ asset('assets/images/img_folder.png') }}" alt="Folder" class="w-full h-full object-contain">
                     </div>
@@ -122,7 +98,7 @@
                         <p class="text-sm font-medium text-black">{{ $folder->quizzes_count }} items</p>
                         <p class="text-[13px] text-gray-400 mt-1">Modified {{ $folder->updated_at->diffForHumans() }}</p>
                     </div>
-                </div>
+                </a>
             @endforeach
             @if($folders->isEmpty())
                 <div class="col-span-2 text-center py-6 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
@@ -133,7 +109,7 @@
     </div>
 
     <!-- ALL QUIZZES -->
-    <div id="quizzes-section" class="pt-2 scroll-mt-24">
+    <div id="quizzes-section" class="pt-2 scroll-mt-40">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-extrabold text-black">My Quizzes</h2>
             <a href="{{ route('my-quizzes.create') }}" class="bg-[#528FB9] text-white px-5 py-2 rounded-full font-medium hover:bg-[#3E779F] transition shadow-sm flex items-center gap-2">
@@ -163,24 +139,49 @@
                     <input type="hidden" name="tags[]" value="{{ $tag }}">
                 @endforeach
                 
-                <select name="major" onchange="this.form.submit()" class="border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-8 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9]">
-                    <option value="">Major</option>
-                    @foreach($majors as $m)
-                        <option value="{{ $m->id_major }}" {{ request('major') == $m->id_major ? 'selected' : '' }}>{{ $m->name }}</option>
-                    @endforeach
-                </select>
+                <div x-data="{ open: false, value: '{{ request('major') }}', label: '{{ request('major') && $majors->firstWhere('id_major', request('major')) ? $majors->firstWhere('id_major', request('major'))->name : 'Major' }}' }" class="relative">
+                    <input type="hidden" name="major" x-model="value">
+                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[140px] bg-white h-full relative">
+                        <span x-text="label" class="truncate pr-4"></span>
+                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[180px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto custom-scrollbar py-1">
+                        <div @click="value = ''; label = 'Major'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition rounded-lg mx-1">Major</div>
+                        @foreach($majors as $m)
+                            <div @click="value = '{{ $m->id_major }}'; label = '{{ $m->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('major') == $m->id_major ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
+                                {{ $m->name }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
 
-                <select name="course" onchange="this.form.submit()" class="border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-8 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9]">
-                    <option value="">Course</option>
-                    @foreach($courses as $c)
-                        <option value="{{ $c->id_course }}" {{ request('course') == $c->id_course ? 'selected' : '' }}>{{ $c->name }}</option>
-                    @endforeach
-                </select>
+                <div x-data="{ open: false, value: '{{ request('course') }}', label: '{{ request('course') && $courses->firstWhere('id_course', request('course')) ? $courses->firstWhere('id_course', request('course'))->name : 'Course' }}' }" class="relative">
+                    <input type="hidden" name="course" x-model="value">
+                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[140px] bg-white h-full relative">
+                        <span x-text="label" class="truncate pr-4"></span>
+                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[180px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto custom-scrollbar py-1">
+                        <div @click="value = ''; label = 'Course'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition rounded-lg mx-1">Course</div>
+                        @foreach($courses as $c)
+                            <div @click="value = '{{ $c->id_course }}'; label = '{{ $c->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('course') == $c->id_course ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
+                                {{ $c->name }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
 
-                <select name="sort" onchange="this.form.submit()" class="border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-8 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9]">
-                    <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest</option>
-                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                </select>
+                <div x-data="{ open: false, value: '{{ request('sort', 'latest') }}', label: '{{ request('sort', 'latest') == 'latest' ? 'Latest' : 'Oldest' }}' }" class="relative">
+                    <input type="hidden" name="sort" x-model="value">
+                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[110px] bg-white h-full relative">
+                        <span x-text="label" class="truncate pr-4"></span>
+                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[120px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-1">
+                        <div @click="value = 'latest'; label = 'Latest'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('sort', 'latest') == 'latest' ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">Latest</div>
+                        <div @click="value = 'oldest'; label = 'Oldest'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('sort') == 'oldest' ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">Oldest</div>
+                    </div>
+                </div>
             </form>
         </div>
 
@@ -227,16 +228,16 @@
 
                     <!-- ACTION BUTTONS -->
                     <div class="w-48 border-l border-gray-100 p-5 flex flex-col gap-3 justify-center">
-                        <a href="{{ route('my-quizzes.edit', $quiz) }}" class="bg-[#528FB9] text-white text-center font-medium py-2 rounded-full text-sm hover:bg-[#3E779F] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
+                        <a href="{{ route('my-quizzes.edit', $quiz) }}" class="bg-[#104876] text-white text-center font-bold py-2 rounded-full text-sm hover:bg-[#0c365a] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
                             Edit
                         </a>
-                        <a href="{{ route('quiz.show', $quiz->id_quiz) }}" class="bg-white border border-gray-300 text-black text-center font-medium py-2 rounded-full text-sm hover:bg-gray-50 hover:shadow-lg hover:-translate-y-0.5 hover:text-[#528FB9] hover:border-[#528FB9] transform transition-all duration-300">
+                        <a href="{{ route('my-quizzes.statistics', $quiz) }}" class="bg-white border border-gray-200 text-black text-center font-bold py-2 rounded-full text-sm shadow-sm hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300">
                             Statistics
                         </a>
                         <form action="{{ route('my-quizzes.destroy', $quiz) }}" method="POST" onsubmit="return confirm('Delete this quiz permanently?')" class="w-full">
                             @csrf
                             @method('DELETE')
-                            <button class="bg-[#ff4d4d] text-white w-full text-center font-medium py-2 rounded-full text-sm hover:bg-[#e60000] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
+                            <button type="submit" class="bg-[#ff4d4d] text-white w-full text-center font-bold py-2 rounded-full text-sm hover:bg-[#e60000] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
                                 Delete
                             </button>
                         </form>
@@ -267,11 +268,20 @@
                         <input type="hidden" name="tags[]" value="{{ $tag }}">
                     @endforeach
 
-                    <select name="per_page" onchange="this.form.submit()" class="border-gray-300 rounded-xl text-sm py-1.5 focus:ring-[#528FB9] focus:border-[#528FB9] cursor-pointer hover:bg-[#eef8fc] transition duration-300">
-                        @foreach([5, 10, 25, 50, 100] as $num)
-                            <option value="{{ $num }}" {{ request('per_page', 10) == $num ? 'selected' : '' }}>{{ $num }}</option>
-                        @endforeach
-                    </select>
+                    <div x-data="{ open: false, value: '{{ request('per_page', 10) }}', label: '{{ request('per_page', 10) }}' }" class="relative">
+                        <input type="hidden" name="per_page" x-model="value">
+                        <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[70px] bg-white relative">
+                            <span x-text="label" class="pr-3"></span>
+                            <svg class="w-4 h-4 text-gray-400 absolute right-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                        </button>
+                        <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mb-1 w-full min-w-[70px] left-0 bottom-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-1">
+                            @foreach([5, 10, 25, 50, 100] as $num)
+                                <div @click="value = '{{ $num }}'; label = '{{ $num }}'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 text-center {{ request('per_page', 10) == $num ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
+                                    {{ $num }}
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
                 </form>
             </div>
             
@@ -460,16 +470,20 @@
 .pagination-custom a.relative.inline-flex.items-center {
     border-radius: 0.5rem !important;
     transition: all 0.3s ease;
+    background-color: white !important;
+    color: #4b5563 !important;
+    border-color: #d1d5db !important;
 }
 .pagination-custom a.relative.inline-flex.items-center:hover {
-    background-color: #A6D9F0 !important;
-    color: #104876 !important;
-    border-color: #528FB9 !important;
+    background-color: #528EB8 !important;
+    color: white !important;
+    border-color: #528EB8 !important;
 }
 .pagination-custom [aria-current="page"] span {
-    background-color: #528FB9 !important;
-    color: white !important;
-    border-color: #528FB9 !important;
+    background-color: #eef8fc !important;
+    color: #104876 !important;
+    border-color: #104876 !important;
+    font-weight: bold;
 }
 </style>
 

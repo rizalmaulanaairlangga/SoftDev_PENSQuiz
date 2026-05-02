@@ -38,12 +38,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/my-quizzes/{myquiz}/edit', [MyQuizController::class, 'edit'])
         ->name('my-quizzes.edit');
 
+    Route::get('/my-quizzes/{myquiz}/statistics', [MyQuizController::class, 'statistics'])
+        ->name('my-quizzes.statistics');
+
     Route::put('/my-quizzes/{myquiz}', [MyQuizController::class, 'update'])
         ->name('my-quizzes.update');
 
     Route::delete('/my-quizzes/{myquiz}', [MyQuizController::class, 'destroy'])
         ->name('my-quizzes.destroy');
 
+    Route::get('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'show'])->name('folders.show');
     Route::post('/folders', [\App\Http\Controllers\FolderController::class, 'store'])->name('folders.store');
     Route::put('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'update'])->name('folders.update');
     Route::delete('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'destroy'])->name('folders.destroy');

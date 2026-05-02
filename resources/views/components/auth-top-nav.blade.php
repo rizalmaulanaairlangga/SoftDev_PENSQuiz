@@ -71,16 +71,12 @@
                     </summary>
 
                     <div class="site-menu-panel absolute left-1/2 top-[calc(100%+1.15rem)] z-50 -translate-x-1/2 rounded-[24px] border border-slate-200/70 bg-white p-2 text-slate-900 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
-                        <a href="{{ route('my-quizzes.index') }}" class="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none">
-                            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M3 5h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm0 4h18" />
-                            </svg>
+                        <a href="{{ route('my-quizzes.index') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                            <img src="{{ asset('assets/images/img_myquizzes.png') }}" class="h-5 w-5 shrink-0 object-contain" alt="My Quizzes">
                             My Quizzes
                         </a>
-                        <a href="{{ route('my-quizzes.create') }}" class="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none">
-                            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M4 4h10l6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v16h14V10h-5V6H4Zm7 3h2v3h3v2h-3v3h-2v-3H8v-2h3V9Z" />
-                            </svg>
+                        <a href="{{ route('my-quizzes.create') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                            <img src="{{ asset('assets/images/img_create_quiz.png') }}" class="h-5 w-5 shrink-0 object-contain" alt="Create a Quiz">
                             Create a Quiz
                         </a>
                     </div>
@@ -101,20 +97,31 @@
                     </svg>
                 </summary>
 
-                <div class="absolute right-0 top-[calc(100%+0.85rem)] z-50 min-w-[220px] rounded-2xl border border-slate-200/80 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
-                    <div class="rounded-xl px-4 py-3">
-                        <p class="text-sm font-bold text-slate-900">{{ $userLabel }}</p>
-                        <p class="mt-1 text-sm font-medium text-slate-500">&#64;{{ auth()->user()->username }}</p>
+                <div class="absolute right-0 top-[calc(100%+0.85rem)] z-50 min-w-[240px] rounded-[24px] border border-slate-100 bg-white p-2 shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
+                    <div class="mb-1 rounded-xl px-4 py-3">
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Account</p>
+                        <p class="mt-1 text-sm font-black text-slate-900">{{ $userLabel }}</p>
                     </div>
+                    
+                    <div class="h-px w-full bg-slate-50 my-1"></div>
+
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                        <img src="{{ asset('assets/images/img_profile.png') }}" class="h-6 w-6 shrink-0 object-contain" alt="Profile">
+                        My Profile
+                    </a>
+
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                        <img src="{{ asset('assets/images/img_settings.png') }}" class="h-6 w-6 shrink-0 object-contain" alt="Settings">
+                        Settings
+                    </a>
+
+                    <div class="h-px w-full bg-slate-50 my-1"></div>
+
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none">
+                        <button type="submit" class="flex w-full items-center gap-4 rounded-[18px] px-4 py-3.5 text-sm font-bold text-red-500 transition hover:bg-red-50 focus:outline-none">
+                            <img src="{{ asset('assets/images/img_logout.png') }}" class="h-6 w-6 shrink-0 object-contain" alt="Logout">
                             Logout
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <path d="m16 17 5-5-5-5" />
-                                <path d="M21 12H9" />
-                            </svg>
                         </button>
                     </form>
                 </div>
@@ -133,10 +140,12 @@
                     </svg>
                 </summary>
                 <div class="site-menu-panel absolute left-0 top-[calc(100%+0.85rem)] z-50 rounded-[24px] border border-slate-200/70 bg-white p-2 text-slate-900 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
-                    <a href="{{ route('my-quizzes.index') }}" class="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none">
+                    <a href="{{ route('my-quizzes.index') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3 text-sm font-bold transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                        <img src="{{ asset('assets/images/img_myquizzes.png') }}" class="h-5 w-5 shrink-0 object-contain" alt="My Quizzes">
                         My Quizzes
                     </a>
-                    <a href="{{ route('my-quizzes.create') }}" class="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none">
+                    <a href="{{ route('my-quizzes.create') }}" class="flex items-center gap-4 rounded-[18px] px-4 py-3 text-sm font-bold transition hover:bg-[#eef8fc] hover:text-[#528FB9] focus:outline-none">
+                        <img src="{{ asset('assets/images/img_create_quiz.png') }}" class="h-5 w-5 shrink-0 object-contain" alt="Create a Quiz">
                         Create a Quiz
                     </a>
                 </div>
