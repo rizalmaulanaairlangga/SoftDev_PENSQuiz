@@ -28,8 +28,7 @@ class MyQuizController extends Controller
         $filterCourse = $request->input('course');
 
         $query = MyQuiz::where('author_id', $userId)
-            ->with(['course', 'major', 'tags'])
-            ->withCount(['questions', 'attempts']);
+            ->with(['course', 'major', 'tags']);
 
         if ($visibility !== 'all') {
             $query->where('visibility', $visibility);
@@ -125,17 +124,6 @@ class MyQuizController extends Controller
             $scrollTo = $folders->isNotEmpty() ? 'folders-section' : 'quizzes-section';
         }
 
-        $totalQuizzes = MyQuiz::where('author_id', $userId)->count();
-
-        $totalQuestions = Question::whereHas('quiz', function ($q) use ($userId) {
-            $q->where('author_id', $userId);
-        })->count();
-
-        $totalAttempts = Attempt::whereHas('quiz', function ($q) use ($userId) {
-            $q->where('author_id', $userId);
-        })->count();
-
-        $completionRate = $totalAttempts > 0 ? 100 : 0; // This should ideally be calculated from finished attempts.
 
         $popularTags = Tag::whereHas('quizzes', function ($q) use ($userId) {
             $q->where('author_id', $userId);
@@ -146,10 +134,6 @@ class MyQuizController extends Controller
 
         return view('pages.quiz.myquiz', compact(
             'quizzes',
-            'totalQuizzes',
-            'totalQuestions',
-            'totalAttempts',
-            'completionRate',
             'folders',
             'popularTags',
             'majors',
@@ -176,10 +160,11 @@ class MyQuizController extends Controller
 
         $courses = Course::orderBy('name')->get();
         $folders = Folder::where('user_id', Auth::id())->get();
+        $majors = \App\Models\Major::all();
         $formQuestions = $this->defaultFormQuestions();
         $tagsString = '';
 
-        return view('pages.quiz.form', compact('quiz', 'courses', 'folders', 'formQuestions', 'tagsString'));
+        return view('pages.quiz.form', compact('quiz', 'courses', 'folders', 'majors', 'formQuestions', 'tagsString'));
     }
 
     public function store(Request $request)
@@ -236,6 +221,7 @@ class MyQuizController extends Controller
 
         $courses = Course::orderBy('name')->get();
         $folders = Folder::where('user_id', Auth::id())->get();
+        $majors = \App\Models\Major::all();
         $formQuestions = $this->questionsFromQuiz($myquiz);
         $tagsString = $myquiz->tags->pluck('name')->implode(', ');
 
@@ -243,9 +229,27 @@ class MyQuizController extends Controller
             'quiz' => $myquiz,
             'courses' => $courses,
             'folders' => $folders,
+            'majors' => $majors,
             'formQuestions' => $formQuestions,
             'tagsString' => $tagsString,
         ]);
+    }
+
+    public function statistics(MyQuiz $myquiz)
+    {
+        abort_unless($myquiz->author_id === Auth::id(), 403);
+
+        $totalAttempts = $myquiz->attempts()->count();
+        $participants = $myquiz->attempts()->distinct('user_id')->count('user_id');
+        
+        // Let's check how completion is stored, we will use completed_at if it exists or time_completed.
+        // Assuming 'score' is present if completed, or just use attempts count if we don't have a specific column.
+        // Let's use whereNotNull('score') for completed attempts.
+        $completedAttempts = $myquiz->attempts()->whereNotNull('score')->count();
+        
+        $completionRate = $totalAttempts > 0 ? round(($completedAttempts / $totalAttempts) * 100) : 0;
+
+        return view('pages.quiz.statistics', compact('myquiz', 'totalAttempts', 'participants', 'completionRate'));
     }
 
     public function update(Request $request, MyQuiz $myquiz)
@@ -340,9 +344,9 @@ class MyQuizController extends Controller
         $normalized = [];
 
         foreach (array_values($questions) as $question) {
-            $type = $question['type'] ?? 'single_answer';
+            $type = $question['type'] ?? 'multiple_choice';
 
-            if (!in_array($type, ['single_answer', 'multiple_answer'], true)) {
+            if (!in_array($type, ['multiple_choice', 'checkbox'], true)) {
                 continue;
             }
 
@@ -376,7 +380,7 @@ class MyQuizController extends Controller
                 ]);
             }
 
-            if ($type === 'single_answer') {
+            if ($type === 'multiple_choice') {
                 $correctIndexes = isset($question['correct_option']) && $question['correct_option'] !== ''
                     ? [(string) $question['correct_option']]
                     : [];
@@ -387,15 +391,15 @@ class MyQuizController extends Controller
                 ));
             }
 
-            if ($strict && $type === 'single_answer' && count($correctIndexes) !== 1) {
+            if ($strict && $type === 'multiple_choice' && count($correctIndexes) !== 1) {
                 throw ValidationException::withMessages([
-                    'questions' => 'Single answer questions need exactly 1 correct option.',
+                    'questions' => 'Multiple choice questions need exactly 1 correct option.',
                 ]);
             }
 
-            if ($strict && $type === 'multiple_answer' && count($correctIndexes) < 2) {
+            if ($strict && $type === 'checkbox' && count($correctIndexes) < 1) {
                 throw ValidationException::withMessages([
-                    'questions' => 'Multiple answer questions need at least 2 correct options.',
+                    'questions' => 'Checkbox questions need at least 1 correct option.',
                 ]);
             }
 
@@ -506,9 +510,9 @@ class MyQuizController extends Controller
                 ->map(fn ($key) => (string) $key)
                 ->all();
 
-            $type = $question->question_type === 'multiple_answer'
-                ? 'multiple_answer'
-                : 'single_answer';
+            $type = $question->question_type === 'checkbox'
+                ? 'checkbox'
+                : 'multiple_choice';
 
             return [
                 'id_question' => $question->id_question,
@@ -528,7 +532,7 @@ class MyQuizController extends Controller
     {
         return [
             [
-                'type' => 'single_answer',
+                'type' => 'multiple_choice',
                 'content' => '',
                 'correct_option' => '0',
                 'correct_options' => [],
@@ -540,7 +544,7 @@ class MyQuizController extends Controller
                 ],
             ],
             [
-                'type' => 'multiple_answer',
+                'type' => 'checkbox',
                 'content' => '',
                 'correct_option' => '0',
                 'correct_options' => [],

@@ -1,40 +1,38 @@
 # Changelog
 
-Semua perubahan penting pada proyek **PENSQuiz** akan didokumentasikan di file ini.
+All notable changes to the PENSQuiz project will be documented in this file.
 
-Format pencatatan ini didasarkan pada standar [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan proyek ini menganut [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
----
-
-## [Unreleased]
-
-### Added (Ditambahkan)
-- Implementasi alur kuiz SPA‑like (Play → Check → Sure‑Submit → Result → Review‑Grid → Review‑Detail).
-- Logika pemilihan jawaban multiple dengan batas maksimal sesuai `correct_count`.
-- Fitur timer dengan indikator warna (biru, kuning, merah) dan auto‑submit saat waktu habis.
-- Penyimpanan jawaban secara asinkron via endpoint `attempt.saveAnswer`.
-- UI review menampilkan warna hijau untuk jawaban benar dan merah untuk salah.
-- Modal retake dengan konfirmasi dan tombol start quiz.
-- Penghapusan menu *Courses* pada header.
-- Penyesuaian desain gradient, spasi vertikal, dan styling tombol.
-
-### Changed (Diubah)
-- Memperbaiki bug `stdClass::$id_quiz` menjadi `quiz_id` pada form retake.
-- Memperbarui logika toggle multiple‑answer sehingga pilihan pertama otomatis dilepas ketika batas tercapai.
-- Penyempurnaan tampilan header back button dengan margin lebih kecil.
-- Pembaruan teks instruksi pada pilihan multiple answer untuk menampilkan `correct_count`.
-
-### Fixed (Diperbaiki)
-- Bug tampilan nomor soal dengan gradient yang tidak konsisten.
-- Penggunaan tombol finish tanpa emoji centang, menggunakan garis berbentuk centang.
-- Hapus notifikasi web lokal saat submit quiz.
-- Perbaikan layout pada review detail sehingga heading instruksi dapat berubah dinamis.
-
----
-
-## [1.0.0] - 2026-04-30
+## [Unreleased] - 2026-05-02
 
 ### Added
-- Versi awal PENSQuiz rilis dengan seluruh alur kuiz dan UI yang stabil.
+- **Quiz Creation Wizard**:
+  - Implemented a new 3-stage workflow (Detail -> Questions -> Summary) for both creating and editing quizzes.
+  - Added a "Summary" stage for final review before publishing or saving as draft.
+  - Integrated a custom validation modal for the "Publish" action to ensure data integrity.
+  - Added smooth scroll-to-top transition between wizard stages.
+  - Implemented dynamic "Infinity" icon for quizzes without a time limit in the summary view.
+- **Profile Management**:
+  - Redesigned the Profile page with a modern dual-tab sidebar layout (Personal Information & Login Information).
+  - Added a live academic semester calculator using Alpine.js that updates instantly based on the "Year of Entry".
+  - Improved form validation visibility with a global error alert system.
+  - Added missing `username` field to the personal info form to ensure full database synchronization.
+- **Assets & Icons**:
+  - Integrated custom images for header dropdown menus (`img_myquizzes.png`, `img_create_quiz.png`, `img_profile.png`, etc.).
+  - Added a standard infinity SVG for the quiz duration preview.
 
-[Unreleased]: #
+### Changed
+- **UI/UX Refinement**:
+  - Updated primary action buttons to use the brand blue color `#528FB9`.
+  - Standardized navigation button sizes across the quiz wizard for better consistency.
+  - Removed redundant icons from the duration input to prioritize native browser number controls.
+  - Redesigned the header profile dropdown with a modern card style and icon-left composition.
+  - Styled the sidebar navigation with soft blue hover effects and clear active/inactive states.
+- **Backend**:
+  - Updated `ProfileUpdateRequest` to validate `first_name`, `last_name`, `username`, `major_id`, and `year_of_entry`.
+  - Enhanced `MyQuizController` and `ProfileController` to handle the new 3-stage wizard and extended profile fields.
+
+### Fixed
+- Fixed a critical syntax error in the Alpine.js `quizFormHandler` that caused the create quiz page to appear blank.
+- Resolved an issue where "Year of Entry" changes were not being persisted to the database due to missing validation fields.
+- Fixed Z-index conflicts in question cards that caused "Correct Answer" dropdowns to be clipped.
+- Corrected the academic semester formula to properly account for odd/even semester cycles.
