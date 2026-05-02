@@ -1,160 +1,108 @@
-# PENSQuiz
+# PENSQuiz 🎓
 
-**PENSQuiz** adalah aplikasi kuis daring yang dibangun dengan **Laravel 8**, Blade, Tailwind CSS, dan vanilla JavaScript. Aplikasi ini menyediakan alur kuis “SPA‑like” (tanpa reload halaman) yang meliputi **Play**, **Check**, **Sure‑Submit**, **Result**, **Review‑Grid**, dan **Review‑Detail**. Semua logika pemilihan jawaban, timer, dan penyimpanan berlangsung secara asinkron melalui API Laravel.
-
----
-
-## 📂 Struktur Proyek
-
-```
-pensquiz/
-├─ app/                     # Kode bisnis Laravel (Controller, Model, Service)
-│   └─ Http/Controllers/
-│        └─ AttemptController.php
-├─ resources/
-│   ├─ views/
-│   │   ├─ pages/
-│   │   │   ├─ quiz/
-│   │   │   │   └─ show.blade.php         # Tampilan daftar kuis
-│   │   │   └─ attempt/
-│   │   │       └─ play.blade.php         # Alur kuis lengkap (play‑check‑…‑review)
-│   │   └─ components/
-│   │       └─ auth-top-nav.blade.php    # Header navigasi
-│   └─ css/
-│       └─ app.css                       # Tailwind + custom utilities
-├─ public/
-│   └─ ...                               # Asset statis, manifest, dll.
-├─ routes/
-│   └─ web.php                           # Definisi route (quiz, attempt, dll.)
-├─ database/
-│   └─ migrations/                       # Skema DB (quiz, question, attempt, …)
-├─ package.json                            # NPM scripts (Vite, Tailwind)
-├─ composer.json                           # Dependensi PHP
-└─ README.md                               # ← Anda sedang membacanya
-```
-
-> **Catatan:** Semua UI berada di dalam satu Blade file (`play.blade.php`) dan dikelola oleh satu state manager JavaScript, sehingga tidak ada alert browser atau reload halaman.
+PENSQuiz is a modern, high-fidelity quiz management and exploration platform built with **Laravel** and **MySQL**. It provides a seamless experience for students and educators to create, manage, and engage with educational quizzes in a visually stunning and highly interactive environment.
 
 ---
 
-## 🚀 Panduan Memulai (Getting Started)
+## 🚀 Key Features
 
-### 1. Prasyarat
-Pastikan sistem Anda telah terpasang:
+### 1. **Quiz Wizard (3-Stage Workflow)**
+Creating high-quality quizzes has never been easier. Our unified wizard guides you through:
+- **Stage 1: Details**: Set title, major, course, duration, and access level.
+- **Stage 2: Questions**: Add Multiple Choice or Checkbox questions with a dynamic, reactive interface.
+- **Stage 3: Summary**: Review all details and questions before publishing. Includes smart validation to ensure quiz quality.
 
-| Tool | Versi (rekomendasi) |
-|------|---------------------|
-| **PHP** | `8.2` atau lebih tinggi |
-| **Composer** | `2.x` |
-| **Node.js** | `18.x` atau lebih tinggi |
-| **npm** | `9.x` |
-| **Laravel Installer** | `8.x` (opsional) |
-| **Git** | `2.x` |
-| **Database** | MySQL 8 / MariaDB 10.6 (atau SQLite untuk dev cepat) |
+### 2. **My Quiz Dashboard**
+- **Folder Organization**: Manage your quizzes in custom folders.
+- **Live Filtering**: Search through your quizzes by title or tags with real-time feedback.
+- **Statistics**: Track user engagement, starts, and completion rates for every quiz you create.
 
-### 2. Clone & Install Dependensi
+### 3. **Interactive Gameplay**
+- **Smooth Navigation**: A polished quiz-taking experience with immediate feedback.
+- **Result & Review**: Detailed analysis of performance after submission, allowing users to learn from their mistakes.
 
+### 4. **Smart Profile Management**
+- **Dual-Tab Interface**: Separate management for Personal Information and Login Credentials.
+- **Academic Automation**: Automatically calculates your current semester based on your "Year of Entry" and the current academic calendar.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Backend**: Laravel 12
+- **Database**: MySQL
+- **Frontend**: Tailwind CSS & Alpine.js (for high interactivity)
+- **Asset Bundling**: Vite
+
+---
+
+## 📦 Installation & Setup
+
+### 1. Clone the Repository
 ```bash
-# Clone repository
-git clone https://github.com/your-org/pensquiz.git
-cd pensquiz
+git clone https://github.com/rizalmaulanaairlangga/SoftDev_PENSQuiz.git
+cd SoftDev_PENSQuiz
+```
 
-# Install paket PHP
-composer install
-
-# Salin file .env contoh & sesuaikan (DB, APP_KEY, dll.)
+### 2. Environment Configuration
+Copy the example environment file and update your database credentials:
+```bash
 cp .env.example .env
 php artisan key:generate
-
-# Install paket Node & compile assets
-npm ci               # atau `npm install`
-npm run dev          # jalankan Vite (hot‑reloading) selama development
 ```
+*Make sure to configure `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in your `.env` file.*
 
-### 3. Migrasi & Seed Database (opsional)
-
+### 3. Install Dependencies
 ```bash
-php artisan migrate          # membuat tabel
-php artisan db:seed          # (jika ada data contoh) 
+composer install
+npm install
 ```
 
-### 4. Jalankan Server Development
-
+### 4. Database Migration
 ```bash
-# Laravel development server
-php artisan serve
-
-# Vite dev server (otomatis dijalankan oleh `npm run dev`)
-```
-
-Buka browser dan kunjungi `http://127.0.0.1:8000`. Anda akan melihat halaman daftar kuis, kemudian dapat memulai alur **Play → Check → Sure‑Submit → Result → Review**.
-
----
-
-## 🛠️ Pengembangan Lanjutan
-
-| Area | Penjelasan | Lokasi File |
-|------|------------|-------------|
-| **Alur Kuiz (JS)** | State manager, render‑quiz, render‑review, timer | `resources/views/pages/attempt/play.blade.php` (script di bagian bawah) |
-| **Routing** | Route resource untuk quiz & attempt | `routes/web.php` |
-| **Controller** | Logika penyimpanan jawaban, submit, fetch‑attempt | `app/Http/Controllers/AttemptController.php` |
-| **Styling** | Tailwind + custom gradient, warna status (benar = green, salah = red) | `resources/css/app.css` (atau `tailwind.config.js`) |
-| **Model & Migration** | `Quiz`, `Question`, `Option`, `Attempt`, `Answer` | `app/Models/…` & `database/migrations/…` |
-
-> **Tip:** Karena UI berada dalam satu file Blade, gunakan `view‑source` di browser bila ingin memeriksa markup yang di‑render.
-
----
-
-## 📋 Aturan Kontribusi & Changelog
-
-1. **Fork** repository, buat branch fitur (`feature/...`) atau perbaikan (`fix/...`).
-2. **Commit** dengan format **Conventional Commits**:  
-   - `feat: tambahkan alur review`  
-   - `fix: perbaiki batas jawaban multiple`  
-   - `docs: perbarui README`  
-   - `style: rapikan Tailwind class`  
-   - `refactor: ubah logika timer`  
-3. **Pull Request**: deskripsikan perubahan, lampirkan screenshot bila UI berubah.
-4. **Changelog**: setiap PR yang masuk akan secara otomatis ditambahkan ke `CHANGELOG.md` oleh skrip CI (jika di‑setup). Pastikan setiap entry mengikuti format di atas.
-
----
-
-## 📦 Build & Deploy (opsional)
-
-```bash
-# Optimasi assets untuk production
-npm run build          # Vite menghasilkan bundle minified di public/build
-
-# Cache config, queue worker, dll.
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-Deploy ke server LAMP/NGINX standar dengan `DocumentRoot` mengarah ke `public/`. Pastikan `.env` berisi `APP_ENV=production` dan `APP_DEBUG=false`.
-
----
-
-## 🧪 Testing (jika tersedia)
-
-Proyek belum memiliki suite unit/feature test lengkap, namun Anda dapat menambahkan:
-
-```bash
-# Unit test (PHPUnit)
-php artisan test
-
-# Browser test (Laravel Dusk) – bila Dusk di‑install
-php artisan dusk
+php artisan migrate --seed
 ```
 
 ---
 
-## 📄 Lisensi
+## 🖥️ Running Locally
 
-PENSQuiz dilisensikan di bawah **MIT License** – lihat file `LICENSE` untuk detail lengkap.
+To start the application, you need to run both the Laravel development server and the Vite dev server for assets:
+
+1. **Start Laravel Server:**
+   ```bash
+   php artisan serve
+   ```
+
+2. **Start Vite (Frontend Assets):**
+   ```bash
+   npm run dev
+   ```
+
+Once both are running, visit `http://127.0.0.1:8000` in your browser.
 
 ---
 
-### 🎉 Selamat mencoba!
+## 🔄 Core Application Flow
 
-Jika ada pertanyaan atau kesulitan, buka *issue* di GitHub atau hubungi tim pengembang melalui Slack/Discord. Happy coding!
+```mermaid
+graph TD
+    A[Explore Quizzes] --> B[Start Quiz]
+    B --> C[Interactive Gameplay]
+    C --> D[Result Analysis]
+    D --> E[Review Answers]
+    
+    F[Create Quiz Wizard] --> G[Step 1: Details]
+    G --> H[Step 2: Questions]
+    H --> I[Step 3: Summary]
+    I --> J[Publish/Save Draft]
+    
+    K[My Profile] --> L[Personal Info]
+    L --> M[Live Semester Update]
+```
+
+---
+
+## 👤 Author
+**Rizal Maulana Airlangga**
+[GitHub Profile](https://github.com/rizalmaulanaairlangga)
