@@ -17,19 +17,37 @@ class FolderController extends Controller
 
         $visibility = $request->input('visibility', 'all');
         $sort = $request->input('sort', 'latest');
+        $search = $request->input('search');
         
-        $query = \App\Models\MyQuiz::where('author_id', Auth::id())
+        $query = \App\Models\MyQuiz::withCount('questions')
+            ->where('author_id', Auth::id())
             ->where('folder_id', $folder->id_folder)
             ->with(['course', 'major', 'tags']);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhereHas('major', function ($q2) use ($search) {
+                      $q2->where('name', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('course', function ($q2) use ($search) {
+                      $q2->where('name', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('tags', function ($q2) use ($search) {
+                      $q2->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
 
         if ($visibility !== 'all') {
             $query->where('visibility', $visibility);
         }
 
         if ($sort === 'latest') {
-            $query->orderByDesc('created_at');
+            $query->orderByDesc('updated_at');
         } elseif ($sort === 'oldest') {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('updated_at', 'asc');
         }
 
         $perPage = $request->input('per_page', 10);
@@ -37,7 +55,14 @@ class FolderController extends Controller
         
         $folder->loadCount('quizzes');
 
-        return view('pages.quiz.folder', compact('folder', 'quizzes', 'visibility', 'sort'));
+        $availableQuizzes = \App\Models\MyQuiz::withCount('questions')
+            ->where('author_id', Auth::id())
+            ->where(function($q) use ($folder) {
+                $q->where('folder_id', '!=', $folder->id_folder)
+                  ->orWhereNull('folder_id');
+            })->orderByDesc('updated_at')->get();
+
+        return view('pages.quiz.folder', compact('folder', 'quizzes', 'visibility', 'sort', 'search', 'availableQuizzes'));
     }
 
     public function store(Request $request)
@@ -92,5 +117,24 @@ class FolderController extends Controller
         $folder->delete();
 
         return back()->with('success', 'Folder deleted successfully.');
+    }
+
+    public function addQuiz(Request $request, Folder $folder)
+    {
+        if ($folder->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        $request->validate(['quiz_id' => 'required|exists:quizzes,id_quiz']);
+        
+        $quiz = \App\Models\MyQuiz::findOrFail($request->quiz_id);
+        
+        if ($quiz->author_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        $quiz->update(['folder_id' => $folder->id_folder]);
+        
+        return back()->with('success', 'Quiz added to folder successfully.');
     }
 }

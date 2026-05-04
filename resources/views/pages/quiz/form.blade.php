@@ -236,7 +236,7 @@
                         type="button" 
                         id="continue-step-1"
                         @click="step = 2"
-                        class="bg-[#104876] text-white px-10 py-4 rounded-full font-bold shadow-lg hover:bg-[#0c365a] hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center gap-3"
+                        class="bg-[#104876] text-white w-full sm:w-auto px-10 py-4 rounded-full font-bold shadow-lg hover:bg-[#0c365a] hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center justify-center gap-3"
                     >
                         Continue
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
@@ -422,21 +422,21 @@
                 </div>
 
                 <!-- Footer Navigation -->
-                <div class="mt-24 flex justify-between items-center pb-24">
+                <div class="mt-12 sm:mt-24 flex flex-col sm:flex-row justify-between items-stretch sm:items-center pb-24 gap-4 sm:gap-0">
                     <button 
                         type="button" 
                         @click="step = 1"
-                        class="bg-white border border-gray-100 text-black px-12 py-6 rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition flex items-center gap-4"
+                        class="bg-white border border-gray-100 text-black px-8 sm:px-12 py-4 sm:py-6 rounded-full sm:rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-4 order-3 sm:order-1"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
                         Previous
                     </button>
                     
-                    <div class="flex gap-6">
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 order-1 sm:order-2">
                         <button 
                             type="button" 
                             @click="submitQuizForm('draft')"
-                            class="bg-white border border-gray-100 text-gray-400 px-12 py-6 rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition"
+                            class="bg-white border border-gray-100 text-gray-400 px-8 sm:px-12 py-4 sm:py-6 rounded-full sm:rounded-[32px] font-bold shadow-sm hover:bg-gray-50 transition order-2 sm:order-1"
                         >
                             Save as Draft
                         </button>
@@ -444,7 +444,7 @@
                             type="button" 
                             id="continue-step-2"
                             @click="goToSummary()"
-                            class="bg-[#104876] text-white px-12 py-6 rounded-[32px] font-bold shadow-xl hover:bg-[#0c365a] hover:shadow-2xl hover:-translate-y-1 transform transition-all flex items-center gap-4"
+                            class="bg-[#104876] text-white px-8 sm:px-12 py-4 sm:py-6 rounded-full sm:rounded-[32px] font-bold shadow-xl hover:bg-[#0c365a] hover:shadow-2xl hover:-translate-y-1 transform transition-all flex items-center justify-center gap-4 order-1 sm:order-2"
                         >
                             Continue
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
@@ -550,11 +550,11 @@
                 </div>
 
                 <!-- Footer Navigation -->
-                <div class="mt-12 flex flex-col gap-6 items-center">
+                <div class="mt-12 flex flex-col gap-4 sm:gap-6 items-center">
                     <button 
                         type="button" 
                         @click="submitQuizForm('draft')"
-                        class="w-full bg-[#eef8fc] border-2 border-[#528FB9] text-[#528FB9] py-8 rounded-[32px] text-xl font-black shadow-sm hover:bg-[#dff0f8] transition"
+                        class="w-full bg-[#eef8fc] border-2 border-[#528FB9] text-[#528FB9] py-5 sm:py-8 rounded-full sm:rounded-[32px] text-lg sm:text-xl font-black shadow-sm hover:bg-[#dff0f8] transition"
                     >
                         Save as Draft
                     </button>
@@ -562,14 +562,14 @@
                         type="button" 
                         id="publish-btn"
                         @click="submitQuizForm('published')"
-                        class="w-full bg-[#528FB9] text-white py-8 rounded-[32px] text-xl font-black shadow-xl hover:bg-[#3E779F] hover:shadow-2xl hover:-translate-y-1 transform transition-all"
+                        class="w-full bg-[#528FB9] text-white py-5 sm:py-8 rounded-full sm:rounded-[32px] text-lg sm:text-xl font-black shadow-xl hover:bg-[#3E779F] hover:shadow-2xl hover:-translate-y-1 transform transition-all"
                     >
                         Publish Quiz
                     </button>
                     <button 
                         type="button" 
                         @click="step = 2"
-                        class="w-full bg-white border-2 border-gray-100 text-gray-400 py-8 rounded-[32px] text-xl font-black shadow-sm hover:bg-gray-50 transition"
+                        class="w-full bg-white border-2 border-gray-100 text-gray-400 py-5 sm:py-8 rounded-full sm:rounded-[32px] text-lg sm:text-xl font-black shadow-sm hover:bg-gray-50 transition"
                     >
                         Back to Questions
                     </button>
@@ -668,56 +668,6 @@
 </div>
 
 <script>
-    function submitQuizForm(vis) {
-        const handler = Alpine.$data(document.querySelector('[x-data]'));
-        
-        // Validation for published quiz
-        if (vis === 'published') {
-            handler.validationErrors = [];
-
-            // 1. Detail Fields (except description)
-            if (!handler.title || !handler.major_id || !handler.course_id || !handler.access) {
-                handler.validationErrors.push({ msg: 'Basic quiz details are incomplete (Title, Major, Course, etc.)', targetStep: 1 });
-            }
-
-            // 2. Questions Validation
-            for (let i = 0; i < handler.questions.length; i++) {
-                const q = handler.questions[i];
-                
-                if (!q.content.trim()) {
-                    handler.validationErrors.push({ msg: `Question ${i + 1} content is empty.`, targetStep: 2 });
-                }
-
-                if (q.type === 'checkbox') {
-                    if (q.correct_options.length < 2) {
-                        handler.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 2 correct answers.`, targetStep: 2 });
-                    }
-                    if (q.options.length < 3) {
-                        handler.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 3 choices.`, targetStep: 2 });
-                    }
-                }
-
-                const correctCount = q.type === 'checkbox' ? q.correct_options.length : 1;
-                if (q.options.length <= correctCount) {
-                    handler.validationErrors.push({ msg: `Question ${i + 1} must have more choices than correct answers.`, targetStep: 2 });
-                }
-
-                if (q.options.some(opt => !opt.content.trim())) {
-                    handler.validationErrors.push({ msg: `Question ${i + 1} has empty choices.`, targetStep: 2 });
-                }
-            }
-
-            if (handler.validationErrors.length > 0) {
-                handler.showValidationModal = true;
-                return;
-            }
-        }
-
-        handler.visibility = vis;
-        handler.isDirty = false;
-        document.getElementById('quizForm').submit();
-    }
-
     function quizFormHandler() {
         return {
             step: 1,
@@ -726,10 +676,14 @@
             validationErrors: [],
             showScrollButton: true,
             isDirty: {{ isset($quiz) && $quiz->exists ? 'true' : 'false' }},
+            isSubmitting: false,
             pendingUrl: null,
             isEdit: {{ isset($quiz) && $quiz->exists ? 'true' : 'false' }},
             
-            // Detail Fields
+            // ==========================================
+            // DETAIL FIELDS BINDING
+            // Data from old() or database injected here
+            // ==========================================
             title: '{{ old("title", $quiz->title ?? "") }}',
             major_id: '{{ old("major_id", $quiz->major_id ?? "") }}',
             course_id: '{{ old("course_id", $quiz->course_id ?? "") }}',
@@ -746,6 +700,11 @@
             // Questions System (Alpine Managed)
             questions: {!! json_encode($questionsData) !!},
 
+            // ==========================================
+            // INITIALIZATION LOGIC
+            // Watchers untuk menandai perubahan (isDirty) 
+            // dan mengatur event listener utama
+            // ==========================================
             init() {
                 this.$watch('title', () => this.isDirty = true);
                 this.$watch('description', () => this.isDirty = true);
@@ -769,7 +728,7 @@
 
                 // Browser back/refresh warning
                 window.addEventListener('beforeunload', (e) => {
-                    if (this.isDirty) {
+                    if (this.isDirty && !this.isSubmitting) {
                         e.preventDefault();
                         e.returnValue = 'You have unsaved changes!';
                         return e.returnValue;
@@ -782,13 +741,70 @@
                     if (link) {
                         const href = link.getAttribute('href');
                         // Skip if it's a submit link, hash link, or javascript link
-                        if (this.isDirty && !this.isSubmitLink(link) && href && href !== '#' && !href.startsWith('javascript:')) {
+                        if (this.isDirty && !this.isSubmitting && !this.isSubmitLink(link) && href && href !== '#' && !href.startsWith('javascript:')) {
                             e.preventDefault();
                             this.pendingUrl = href;
                             this.showCancelModal = true;
                         }
                     }
                 }, true); // Use capture phase to catch events early
+            },
+
+            // ==========================================
+            // FORM SUBMISSION LOGIC
+            // Memvalidasi data sebelum di-publish dan
+            // mensubmit form ke backend jika sukses.
+            // ==========================================
+            submitQuizForm(vis) {
+                // Validation for published quiz
+                if (vis === 'published') {
+                    this.validationErrors = [];
+
+                    // 1. Detail Fields (except description)
+                    if (!this.title || !this.major_id || !this.course_id || !this.access) {
+                        this.validationErrors.push({ msg: 'Basic quiz details are incomplete (Title, Major, Course, etc.)', targetStep: 1 });
+                    }
+
+                    // 2. Questions Validation
+                    for (let i = 0; i < this.questions.length; i++) {
+                        const q = this.questions[i];
+                        
+                        if (!q.content.trim()) {
+                            this.validationErrors.push({ msg: `Question ${i + 1} content is empty.`, targetStep: 2 });
+                        }
+
+                        if (q.type === 'checkbox') {
+                            if (q.correct_options.length < 2) {
+                                this.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 2 correct answers.`, targetStep: 2 });
+                            }
+                            if (q.options.length < 3) {
+                                this.validationErrors.push({ msg: `Question ${i + 1} (Checkbox) must have at least 3 choices.`, targetStep: 2 });
+                            }
+                        }
+
+                        const correctCount = q.type === 'checkbox' ? q.correct_options.length : 1;
+                        if (q.options.length <= correctCount) {
+                            this.validationErrors.push({ msg: `Question ${i + 1} must have more choices than correct answers.`, targetStep: 2 });
+                        }
+
+                        if (q.options.some(opt => !opt.content.trim())) {
+                            this.validationErrors.push({ msg: `Question ${i + 1} has empty choices.`, targetStep: 2 });
+                        }
+                    }
+
+                    if (this.validationErrors.length > 0) {
+                        this.showValidationModal = true;
+                        return;
+                    }
+                }
+
+                this.visibility = vis;
+                this.isSubmitting = true;
+                this.isDirty = false;
+                
+                this.$nextTick(() => {
+                    document.getElementById('quizForm').submit();
+                });
             },
 
             scrollToFormBottom() {
@@ -836,7 +852,11 @@
                 return link.closest('#quizForm') !== null || link.getAttribute('href').startsWith('javascript:');
             },
 
-            // Tags System
+            // ==========================================
+            // TAGS SYSTEM LOGIC
+            // Fungsi untuk mencari, menambah, dan
+            // menghapus tag secara dinamis.
+            // ==========================================
             tagSearch: '',
             tags: {!! json_encode(old('tags', $quiz->tags->pluck('name')->toArray())) !!},
             allTags: {!! json_encode($allTags) !!},
@@ -883,7 +903,11 @@
                 });
             },
 
-            // Question Helpers
+            // ==========================================
+            // QUESTION MANAGEMENT HELPERS
+            // Fungsi-fungsi untuk memanipulasi struktur
+            // array pertanyaan dan pilihan ganda.
+            // ==========================================
             addQuestion(afterIdx = null) {
                 const newQuestion = {
                     type: 'multiple_choice',

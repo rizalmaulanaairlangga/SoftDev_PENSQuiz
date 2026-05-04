@@ -13,50 +13,64 @@ class DiscoverController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $filterTags = $request->input('tags', []);
+
+        // Fetch popular tags for the filter modal
+        $popularTags = Tag::whereHas('quizzes', function ($q) {
+            $q->where('access', 'public');
+        })->withCount('quizzes')->orderByDesc('quizzes_count')->take(10)->get();
 
         // Base query for public quizzes
-        if ($search) {
+        if ($search || !empty($filterTags)) {
             $baseQuery = MyQuiz::with(['course', 'major', 'author', 'tags'])
                 ->withCount('questions')
                 ->where('access', 'public');
                 
-            $baseQuery->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhereHas('major', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('course', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('author', function($q) use ($search) {
-                      $q->where(DB::raw("CONCAT(first_name, ' ', COALESCE(last_name, ''))"), 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('lecturer', function($q) use ($search) {
-                      $q->where('full_name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('tags', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
-            });
-            $searchResults = $baseQuery->paginate(12);
-            return view('pages.quiz.discover', compact('searchResults', 'search'));
+            if ($search) {
+                $baseQuery->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhereHas('major', function($q) use ($search) {
+                          $q->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('course', function($q) use ($search) {
+                          $q->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('author', function($q) use ($search) {
+                          $q->where(DB::raw("CONCAT(first_name, ' ', COALESCE(last_name, ''))"), 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('lecturer', function($q) use ($search) {
+                          $q->where('full_name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('tags', function($q) use ($search) {
+                          $q->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            if (!empty($filterTags)) {
+                $baseQuery->whereHas('tags', function ($q) use ($filterTags) {
+                    $q->whereIn('tags.id_tag', $filterTags);
+                });
+            }
+
+            $searchResults = $baseQuery->paginate(12)->appends($request->query());
+            return view('pages.quiz.discover', compact('searchResults', 'search', 'filterTags', 'popularTags'));
         }
 
-        // History
+        // History: Quizzes the user has actually attempted
         $historyQuizzes = collect();
         if (Auth::check()) {
-            $historyRecords = \App\Models\QuizHistory::with([
-                'quiz' => function($q) {
+            $attempts = \App\Models\Attempt::with(['quiz' => function($q) {
                     $q->with(['course', 'major', 'author', 'tags'])->withCount('questions')->where('access', 'public');
-                }
-            ])
-            ->where('user_id', Auth::id())
-            ->latest('last_opened_at')
-            ->take(10)
-            ->get();
-            
-            $historyQuizzes = $historyRecords->map(function($h) {
-                return $h->quiz;
+                }])
+                ->where('user_id', Auth::id())
+                ->latest('updated_at')
+                ->get()
+                ->unique('quiz_id')
+                ->take(10);
+                
+            $historyQuizzes = $attempts->map(function($a) {
+                return $a->quiz;
             })->filter(); // remove nulls
         }
 
@@ -156,7 +170,9 @@ class DiscoverController extends Controller
             'historyQuizzes',
             'recommendedQuizzes',
             'popularQuizzes',
-            'trendingQuizzes'
+            'trendingQuizzes',
+            'filterTags',
+            'popularTags'
         ));
     }
 

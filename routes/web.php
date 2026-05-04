@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/folders', [\App\Http\Controllers\FolderController::class, 'store'])->name('folders.store');
     Route::put('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'update'])->name('folders.update');
     Route::delete('/folders/{folder}', [\App\Http\Controllers\FolderController::class, 'destroy'])->name('folders.destroy');
+    Route::post('/folders/{folder}/add-quiz', [\App\Http\Controllers\FolderController::class, 'addQuiz'])->name('folders.addQuiz');
     // Route::get('/quizzes', [QuizController::class, 'discover']);
     // Route::get('/quizzes/{id}', [QuizController::class, 'show']);
 
