@@ -17,6 +17,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/quizzes', [DiscoverController::class, 'index'])->name('quizzes.index');
     Route::get('/quiz/{id}', [DiscoverController::class, 'show'])->name('quiz.show');
+    Route::post('/quiz/{id}/copy', [DiscoverController::class, 'copy'])->name('quiz.copy');
 
     Route::post('/quiz/{id}/start', [AttemptController::class, 'start'])->name('quiz.start');
     Route::get('/attempt/{id}', [AttemptController::class, 'play'])->name('attempt.play');

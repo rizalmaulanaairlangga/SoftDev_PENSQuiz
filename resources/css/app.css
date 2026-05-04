@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes marquee-scroll {
+    0% { transform: translateX(0); }
+    15% { transform: translateX(0); }
+    85% { transform: translateX(var(--marquee-width, -50%)); }
+    100% { transform: translateX(var(--marquee-width, -50%)); }
+}
+
+.marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
+.marquee-content {
+    display: inline-block;
+    padding-right: 2rem;
+}
+
+.group:hover .animate-marquee {
+    display: inline-block;
+    animation: marquee-scroll 8s linear infinite;
+}

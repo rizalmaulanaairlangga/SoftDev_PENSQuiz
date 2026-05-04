@@ -25,6 +25,7 @@ class MyQuiz extends Model
         'description',
         'major_id',
         'course_id',
+        'lecturer_id',
         'time_limit_minutes',
         'visibility',
         'access',
@@ -47,6 +48,11 @@ class MyQuiz extends Model
     public function course()
     {
         return $this->belongsTo(Course::class, 'course_id', 'id_course');
+    }
+
+    public function lecturer()
+    {
+        return $this->belongsTo(Lecturer::class, 'lecturer_id', 'id_lecturer');
     }
 
     public function tags()

@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->foreignId('major_id')->nullable()->constrained('majors','id_major')->nullOnDelete();
             $table->foreignId('course_id')->nullable()->constrained('courses','id_course')->nullOnDelete();
+            $table->foreignId('lecturer_id')->nullable()->constrained('lecturers','id_lecturer')->nullOnDelete();
             $table->foreignId('folder_id')->nullable()->constrained('folders','id_folder')->nullOnDelete();
 
             $table->string('visibility',20)->default('draft');
