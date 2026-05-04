@@ -31,6 +31,9 @@ class DiscoverController extends Controller
                   ->orWhereHas('author', function($q) use ($search) {
                       $q->where(DB::raw("CONCAT(first_name, ' ', COALESCE(last_name, ''))"), 'like', "%{$search}%");
                   })
+                  ->orWhereHas('lecturer', function($q) use ($search) {
+                      $q->where('full_name', 'like', "%{$search}%");
+                  })
                   ->orWhereHas('tags', function($q) use ($search) {
                       $q->where('name', 'like', "%{$search}%");
                   });
@@ -159,29 +162,19 @@ class DiscoverController extends Controller
 
     public function show($id)
     {
-        $quiz = DB::table('quizzes')
-            ->leftJoin('users', 'quizzes.author_id', '=', 'users.id_user')
-            ->leftJoin('courses', 'quizzes.course_id', '=', 'courses.id_course')
-            ->leftJoin('majors', 'quizzes.major_id', '=', 'majors.id_major')
-            ->where('quizzes.id_quiz', $id)
-            ->select(
-                'quizzes.id_quiz',
-                'quizzes.title',
-                'quizzes.description',
-                'quizzes.cover_image_url',
-                'quizzes.time_limit_minutes',
-                'quizzes.course_id',
-                'courses.name as course_name',
-                'majors.name as major_name',
-                DB::raw("CONCAT(users.first_name, ' ', COALESCE(users.last_name, '')) as creator_name")
-            )
-            ->first();
+        $quiz = MyQuiz::with(['course', 'major', 'author', 'lecturer'])
+            ->withCount('questions')
+            ->find($id);
 
         if (!$quiz) abort(404);
 
-        $questionCount = DB::table('questions')
-            ->where('quiz_id', $id)
-            ->count();
+        // Add virtual properties for backward compatibility if needed, 
+        // but it's better to update the view to use $quiz directly.
+        $quiz->course_name = $quiz->course->name ?? null;
+        $quiz->major_name = $quiz->major->name ?? null;
+        $quiz->creator_name = $quiz->author ? $quiz->author->first_name . ' ' . ($quiz->author->last_name ?? '') : 'System';
+        
+        $questionCount = $quiz->questions_count;
 
         // hapus relatedCourses (di-request dihapus)
 
@@ -242,5 +235,66 @@ class DiscoverController extends Controller
             'participants',
             'completionRate'
         ));
+    }
+    public function copy(Request $request, $id)
+    {
+        $originalQuiz = MyQuiz::with(['questions.options', 'tags'])->findOrFail($id);
+
+        if (!$originalQuiz->allow_copy || $originalQuiz->author_id === Auth::id()) {
+            return back()->with('error', 'You are not allowed to copy this quiz.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Duplicate Quiz
+            $newQuiz = $originalQuiz->replicate([
+                'author_id',
+                'folder_id',
+                'version_number',
+                'has_been_updated',
+                'created_at',
+                'updated_at'
+            ]);
+            
+            $newQuiz->author_id = Auth::id();
+            $newQuiz->folder_id = null; // Don't copy to original folder
+            $newQuiz->version_number = 1;
+            $newQuiz->has_been_updated = false;
+            $newQuiz->title = $originalQuiz->title . ' (Copy)';
+            $newQuiz->visibility = 'draft'; // Set as draft initially
+            $newQuiz->save();
+
+            // Duplicate Tags
+            $newQuiz->tags()->sync($originalQuiz->tags->pluck('id_tag'));
+
+            // Duplicate Questions and Options
+            foreach ($originalQuiz->questions as $question) {
+                $newQuestion = $question->replicate(['quiz_id', 'created_at', 'updated_at']);
+                $newQuestion->quiz_id = $newQuiz->id_quiz;
+                $newQuestion->save();
+
+                foreach ($question->options as $option) {
+                    $newOption = $option->replicate(['question_id', 'created_at', 'updated_at']);
+                    $newOption->question_id = $newQuestion->id_question;
+                    $newOption->save();
+                }
+            }
+
+            DB::commit();
+
+            if ($request->input('action') === 'edit') {
+                return redirect()
+                    ->route('my-quizzes.edit', $newQuiz->id_quiz)
+                    ->with('success', 'Quiz copied successfully! You are now editing your copy.');
+            }
+
+            return redirect()
+                ->route('my-quizzes.index')
+                ->with('success', 'Quiz copied successfully to your collection!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to copy quiz: ' . $e->getMessage());
+        }
     }
 }

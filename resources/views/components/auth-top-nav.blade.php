@@ -153,3 +153,13 @@
         </nav>
     </div>
 </header>
+
+<script>
+    document.addEventListener('click', function(event) {
+        document.querySelectorAll('details.site-user-menu').forEach(function(details) {
+            if (!details.contains(event.target) && details.hasAttribute('open')) {
+                details.removeAttribute('open');
+            }
+        });
+    });
+</script>

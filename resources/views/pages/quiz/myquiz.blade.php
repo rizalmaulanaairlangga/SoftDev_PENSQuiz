@@ -141,14 +141,18 @@
                 
                 <div x-data="{ open: false, value: '{{ request('major') }}', label: '{{ request('major') && $majors->firstWhere('id_major', request('major')) ? $majors->firstWhere('id_major', request('major'))->name : 'Major' }}' }" class="relative">
                     <input type="hidden" name="major" x-model="value">
-                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[140px] bg-white h-full relative">
+                    <button type="button" @click="open = !open" @click.away="open = false" 
+                        class="border rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer transition duration-300 flex items-center justify-between min-w-[140px] h-full relative
+                        {{ request('major') ? 'bg-[#528FB9] text-white border-[#528FB9]' : 'bg-white text-gray-600 border-gray-300 hover:bg-[#eef8fc] hover:text-[#528FB9] hover:border-[#528FB9]' }}">
                         <span x-text="label" class="truncate pr-4"></span>
-                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-4 h-4 ml-2 {{ request('major') ? 'text-white' : 'text-gray-400' }} absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[180px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto custom-scrollbar py-1">
-                        <div @click="value = ''; label = 'Major'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition rounded-lg mx-1">Major</div>
+                        <div @click="value = ''; label = 'Major'; open = false; $nextTick(() => $el.closest('form').submit())" 
+                            class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ !request('major') ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">Major</div>
                         @foreach($majors as $m)
-                            <div @click="value = '{{ $m->id_major }}'; label = '{{ $m->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('major') == $m->id_major ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
+                            <div @click="value = '{{ $m->id_major }}'; label = '{{ $m->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" 
+                                class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ $filterMajor == $m->id_major ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
                                 {{ $m->name }}
                             </div>
                         @endforeach
@@ -157,14 +161,18 @@
 
                 <div x-data="{ open: false, value: '{{ request('course') }}', label: '{{ request('course') && $courses->firstWhere('id_course', request('course')) ? $courses->firstWhere('id_course', request('course'))->name : 'Course' }}' }" class="relative">
                     <input type="hidden" name="course" x-model="value">
-                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[140px] bg-white h-full relative">
+                    <button type="button" @click="open = !open" @click.away="open = false" 
+                        class="border rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer transition duration-300 flex items-center justify-between min-w-[140px] h-full relative
+                        {{ request('course') ? 'bg-[#528FB9] text-white border-[#528FB9]' : 'bg-white text-gray-600 border-gray-300 hover:bg-[#eef8fc] hover:text-[#528FB9] hover:border-[#528FB9]' }}">
                         <span x-text="label" class="truncate pr-4"></span>
-                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-4 h-4 ml-2 {{ request('course') ? 'text-white' : 'text-gray-400' }} absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[180px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto custom-scrollbar py-1">
-                        <div @click="value = ''; label = 'Course'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition rounded-lg mx-1">Course</div>
+                        <div @click="value = ''; label = 'Course'; open = false; $nextTick(() => $el.closest('form').submit())" 
+                            class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ !request('course') ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">Course</div>
                         @foreach($courses as $c)
-                            <div @click="value = '{{ $c->id_course }}'; label = '{{ $c->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('course') == $c->id_course ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
+                            <div @click="value = '{{ $c->id_course }}'; label = '{{ $c->name }}'; open = false; $nextTick(() => $el.closest('form').submit())" 
+                                class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ $filterCourse == $c->id_course ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">
                                 {{ $c->name }}
                             </div>
                         @endforeach
@@ -173,9 +181,11 @@
 
                 <div x-data="{ open: false, value: '{{ request('sort', 'latest') }}', label: '{{ request('sort', 'latest') == 'latest' ? 'Latest' : 'Oldest' }}' }" class="relative">
                     <input type="hidden" name="sort" x-model="value">
-                    <button type="button" @click="open = !open" @click.away="open = false" class="border border-gray-300 rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer text-gray-600 hover:bg-[#eef8fc] hover:text-[#528FB9] transition duration-300 hover:border-[#528FB9] flex items-center justify-between min-w-[110px] bg-white h-full relative">
+                    <button type="button" @click="open = !open" @click.away="open = false" 
+                        class="border rounded-xl text-sm py-1.5 pl-4 pr-3 focus:ring-2 focus:ring-[#528FB9] focus:border-[#528FB9] shadow-sm cursor-pointer transition duration-300 flex items-center justify-between min-w-[110px] h-full relative
+                        {{ request('sort') && request('sort') != 'latest' ? 'bg-[#528FB9] text-white border-[#528FB9]' : 'bg-white text-gray-600 border-gray-300 hover:bg-[#eef8fc] hover:text-[#528FB9] hover:border-[#528FB9]' }}">
                         <span x-text="label" class="truncate pr-4"></span>
-                        <svg class="w-4 h-4 ml-2 text-gray-400 absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-4 h-4 ml-2 {{ request('sort') && request('sort') != 'latest' ? 'text-white' : 'text-gray-400' }} absolute right-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div x-show="open" x-transition.opacity.duration.200ms style="display: none;" class="absolute z-50 mt-1 w-full min-w-[120px] right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-1">
                         <div @click="value = 'latest'; label = 'Latest'; open = false; $nextTick(() => $el.closest('form').submit())" class="px-4 py-2 text-sm cursor-pointer transition rounded-lg mx-1 {{ request('sort', 'latest') == 'latest' ? 'bg-[#528FB9] text-white' : 'text-gray-700 hover:bg-[#528FB9] hover:text-white' }}">Latest</div>
@@ -193,8 +203,8 @@
                         @if($quiz->cover_image_url)
                             <img src="{{ $quiz->cover_image_url }}" alt="Cover" class="w-full h-full object-cover">
                         @else
-                            <div class="w-full h-full flex items-center justify-center bg-[#528FB9]/10">
-                                <svg class="w-12 h-12 text-[#528FB9]/40" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/></svg>
+                            <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                                <img src="{{ asset('assets/default-cover.png') }}" alt="Default Cover" class="w-full h-full object-cover">
                             </div>
                         @endif
                     </div>
@@ -228,7 +238,7 @@
 
                     <!-- ACTION BUTTONS -->
                     <div class="w-48 border-l border-gray-100 p-5 flex flex-col gap-3 justify-center">
-                        <a href="{{ route('my-quizzes.edit', $quiz) }}" class="bg-[#104876] text-white text-center font-bold py-2 rounded-full text-sm hover:bg-[#0c365a] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
+                        <a href="{{ route('my-quizzes.edit', $quiz) }}" class="bg-[#528FB9] text-white text-center font-bold py-2 rounded-full text-sm hover:bg-[#3E779F] hover:shadow-lg hover:-translate-y-0.5 transform transition-all duration-300">
                             Edit
                         </a>
                         <a href="{{ route('my-quizzes.statistics', $quiz) }}" class="bg-white border border-gray-200 text-black text-center font-bold py-2 rounded-full text-sm shadow-sm hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300">

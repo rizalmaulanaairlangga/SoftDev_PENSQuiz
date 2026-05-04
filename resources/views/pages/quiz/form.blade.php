@@ -96,6 +96,24 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Folder Selection -->
+                        <div>
+                            <label class="block text-sm font-bold text-black mb-3">Quiz Folder (Optional)</label>
+                            <div x-data="{ open: false, value: '{{ old('folder_id', $quiz->folder_id ?? '') }}', label: '{{ old('folder_id', $quiz->folder_id) && $folders->firstWhere('id_folder', old('folder_id', $quiz->folder_id)) ? $folders->firstWhere('id_folder', old('folder_id', $quiz->folder_id))->name : 'No Folder' }}' }" class="relative">
+                                <input type="hidden" name="folder_id" x-model="value" @change="folder_id = value; isDirty = true">
+                                <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
+                                    <span x-text="label" class="truncate pr-4"></span>
+                                    <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                                <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
+                                    <div @click="value = ''; label = 'No Folder'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">No Folder</div>
+                                    @foreach($folders as $folder)
+                                        <div @click="value = '{{ $folder->id_folder }}'; label = '{{ $folder->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $folder->id_folder }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $folder->name }}</div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Description -->
                         <div>
@@ -216,6 +234,7 @@
                 <div class="mt-12 flex justify-end">
                     <button 
                         type="button" 
+                        id="continue-step-1"
                         @click="step = 2"
                         class="bg-[#104876] text-white px-10 py-4 rounded-full font-bold shadow-lg hover:bg-[#0c365a] hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center gap-3"
                     >
@@ -423,6 +442,7 @@
                         </button>
                         <button 
                             type="button" 
+                            id="continue-step-2"
                             @click="goToSummary()"
                             class="bg-[#104876] text-white px-12 py-6 rounded-[32px] font-bold shadow-xl hover:bg-[#0c365a] hover:shadow-2xl hover:-translate-y-1 transform transition-all flex items-center gap-4"
                         >
@@ -540,6 +560,7 @@
                     </button>
                     <button 
                         type="button" 
+                        id="publish-btn"
                         @click="submitQuizForm('published')"
                         class="w-full bg-[#528FB9] text-white py-8 rounded-[32px] text-xl font-black shadow-xl hover:bg-[#3E779F] hover:shadow-2xl hover:-translate-y-1 transform transition-all"
                     >
@@ -553,6 +574,7 @@
                         Back to Questions
                     </button>
                 </div>
+                <div id="form-bottom"></div>
             </div>
         </form>
     </div>
@@ -624,12 +646,24 @@
                 <button 
                     type="button" 
                     @click="showCancelModal = false"
-                    class="w-full py-2 text-sm font-bold text-gray-400 hover:text-black transition"
+                    class="w-full rounded-full border border-gray-200 bg-white py-4 text-sm font-bold text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 shadow-sm"
                 >
                     Back to edit
                 </button>
             </div>
         </div>
+    </div>
+    <!-- Scroll to Bottom Button -->
+    <div x-show="showScrollButton" x-transition class="fixed bottom-10 right-10 lg:right-[calc(50%-550px)] z-40 hidden md:block">
+        <button 
+            type="button" 
+            @click="scrollToFormBottom()"
+            class="group bg-white border-2 border-[#528EB8] text-[#528EB8] p-4 rounded-2xl shadow-xl hover:bg-[#528EB8] hover:text-white transition-all duration-300 flex flex-col items-center gap-1"
+            title="Scroll to bottom"
+        >
+            <svg class="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7-7-7m14-8l-7 7-7-7" /></svg>
+            <span class="text-[10px] text-[#528EB8] group-hover:text-white font-black uppercase tracking-widest transition-colors duration-300">Bottom</span>
+        </button>
     </div>
 </div>
 
@@ -690,14 +724,17 @@
             showCancelModal: false,
             showValidationModal: false,
             validationErrors: [],
-            isDirty: false,
+            showScrollButton: true,
+            isDirty: {{ isset($quiz) && $quiz->exists ? 'true' : 'false' }},
             pendingUrl: null,
+            isEdit: {{ isset($quiz) && $quiz->exists ? 'true' : 'false' }},
             
             // Detail Fields
             title: '{{ old("title", $quiz->title ?? "") }}',
             major_id: '{{ old("major_id", $quiz->major_id ?? "") }}',
             course_id: '{{ old("course_id", $quiz->course_id ?? "") }}',
             description: '{{ old("description", $quiz->description ?? "") }}',
+            folder_id: '{{ old("folder_id", $quiz->folder_id ?? "") }}',
             time_limit_minutes: '{{ old("time_limit_minutes", $quiz->time_limit_minutes ?? "") }}',
             access: '{{ old("access", $quiz->access ?? "private") }}',
             allow_copy: {{ old("allow_copy", $quiz->allow_copy ?? false) ? 'true' : 'false' }},
@@ -715,26 +752,84 @@
                 this.$watch('time_limit_minutes', () => this.isDirty = true);
                 this.$watch('allow_copy', () => this.isDirty = true);
                 this.$watch('tags', () => this.isDirty = true);
+                this.$watch('major_id', () => this.isDirty = true);
+                this.$watch('course_id', () => this.isDirty = true);
+                this.$watch('folder_id', () => this.isDirty = true);
                 this.$watch('questions', () => this.isDirty = true, { deep: true });
 
                 this.$watch('step', () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    this.$nextTick(() => this.updateScrollButtonState());
                 });
 
-                // Intercept navigation
-                document.addEventListener('click', (e) => {
-                    const link = e.target.closest('a');
-                    if (link && this.isDirty && !this.isSubmitLink(link)) {
+                window.addEventListener('scroll', () => this.updateScrollButtonState(), { passive: true });
+                window.addEventListener('resize', () => this.updateScrollButtonState());
+
+                this.$nextTick(() => this.updateScrollButtonState());
+
+                // Browser back/refresh warning
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.isDirty) {
                         e.preventDefault();
-                        this.pendingUrl = link.href;
-                        this.showCancelModal = true;
+                        e.returnValue = 'You have unsaved changes!';
+                        return e.returnValue;
                     }
                 });
 
-                // Browser back/refresh warning
-                window.onbeforeunload = () => {
-                    if (this.isDirty) return "You have unsaved changes!";
-                };
+                // Consolidate Global link interception (Header, Footer, Sidebar, etc.)
+                document.addEventListener('click', (e) => {
+                    const link = e.target.closest('a');
+                    if (link) {
+                        const href = link.getAttribute('href');
+                        // Skip if it's a submit link, hash link, or javascript link
+                        if (this.isDirty && !this.isSubmitLink(link) && href && href !== '#' && !href.startsWith('javascript:')) {
+                            e.preventDefault();
+                            this.pendingUrl = href;
+                            this.showCancelModal = true;
+                        }
+                    }
+                }, true); // Use capture phase to catch events early
+            },
+
+            scrollToFormBottom() {
+                const targetId = this.step === 1
+                    ? 'continue-step-1'
+                    : this.step === 2
+                        ? 'continue-step-2'
+                        : 'publish-btn';
+
+                const el = document.getElementById(targetId) || document.getElementById('form-bottom') || document.getElementById('quizForm');
+
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    const scrollTarget = window.pageYOffset + rect.bottom - window.innerHeight + 96;
+                    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+                } else {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+
+                this.$nextTick(() => this.updateScrollButtonState());
+            },
+
+            getBottomTargetElement() {
+                return document.getElementById(this.step === 1
+                    ? 'continue-step-1'
+                    : this.step === 2
+                        ? 'continue-step-2'
+                        : 'publish-btn')
+                    || document.getElementById('form-bottom');
+            },
+
+            updateScrollButtonState() {
+                const el = this.getBottomTargetElement();
+
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    this.showScrollButton = !(rect.top < window.innerHeight && rect.bottom > 0);
+                    return;
+                }
+
+                this.showScrollButton = window.pageYOffset + window.innerHeight < document.body.scrollHeight - 24;
             },
 
             isSubmitLink(link) {

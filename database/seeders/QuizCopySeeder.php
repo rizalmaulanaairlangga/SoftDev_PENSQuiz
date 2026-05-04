@@ -14,52 +14,48 @@ class QuizCopySeeder extends Seeder
 
         $users = DB::table('users')->pluck('id_user')->toArray();
 
+        // Ambil 2 kuis acak yang public dan allow_copy
         $quizzes = DB::table('quizzes')
             ->where('access', 'public')
             ->where('allow_copy', true)
+            ->inRandomOrder()
+            ->take(2)
             ->get();
 
         foreach ($quizzes as $quiz) {
+            // pilih user yang BUKAN author asli
+            $otherUsers = array_filter($users, fn($u) => $u != $quiz->author_id);
+            if (empty($otherUsers)) continue;
 
-            // 1–2 copy per quiz
-            $copyCount = rand(1, 2);
+            $newAuthor = $otherUsers[array_rand($otherUsers)];
 
-            for ($i = 0; $i < $copyCount; $i++) {
+            // buat quiz baru (copy)
+            $newQuizId = DB::table('quizzes')->insertGetId([
+                'author_id' => $newAuthor,
+                'title' => $quiz->title . ' (Copy)',
+                'description' => $quiz->description,
 
-                // pilih user yang BUKAN author asli
-                $otherUsers = array_filter($users, fn($u) => $u != $quiz->author_id);
-                if (empty($otherUsers)) continue;
+                'major_id' => $quiz->major_id,
+                'course_id' => $quiz->course_id,
 
-                $newAuthor = $otherUsers[array_rand($otherUsers)];
+                'visibility' => 'draft',
+                'access' => 'private',
 
-                // buat quiz baru (copy)
-                $newQuizId = DB::table('quizzes')->insertGetId([
-                    'author_id' => $newAuthor,
-                    'title' => $quiz->title . ' (Copy)',
-                    'description' => $quiz->description,
+                'allow_copy' => false,
+                'version_number' => 1,
+                'has_been_updated' => false,
 
-                    'major_id' => $quiz->major_id,
-                    'course_id' => $quiz->course_id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-                    'visibility' => 'draft',
-                    'access' => 'private',
-
-                    'allow_copy' => false,
-                    'version_number' => 1,
-                    'has_been_updated' => false,
-
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-
-                // catat di quiz_copies
-                DB::table('quiz_copies')->insert([
-                    'original_quiz_id' => $quiz->id_quiz,
-                    'new_quiz_id' => $newQuizId,
-                    'copied_by_user_id' => $newAuthor,
-                    'copied_at' => $now,
-                ]);
-            }
+            // catat di quiz_copies
+            DB::table('quiz_copies')->insert([
+                'original_quiz_id' => $quiz->id_quiz,
+                'new_quiz_id' => $newQuizId,
+                'copied_by_user_id' => $newAuthor,
+                'copied_at' => $now,
+            ]);
         }
     }
 }

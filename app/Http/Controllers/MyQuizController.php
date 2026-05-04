@@ -65,9 +65,9 @@ class MyQuizController extends Controller
         }
 
         if ($sort === 'latest') {
-            $query->orderByDesc('created_at');
+            $query->orderByDesc('created_at')->orderByDesc('id_quiz');
         } elseif ($sort === 'oldest') {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->orderBy('id_quiz', 'asc');
         }
 
         $perPage = $request->input('per_page', 10);
@@ -335,7 +335,10 @@ class MyQuizController extends Controller
 
             'cover_image' => ['nullable', 'image', 'max:4096'],
             'remove_cover' => ['nullable', 'boolean'],
-            'tags' => ['nullable', 'string', 'max:255'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
+            'major_id' => ['required', 'integer', 'exists:majors,id_major'],
+            'folder_id' => ['nullable', 'integer', 'exists:folders,id_folder'],
         ]);
     }
 
@@ -558,12 +561,19 @@ class MyQuizController extends Controller
         ];
     }
 
-    private function syncTags(MyQuiz $quiz, string $tagsString): void
+    private function syncTags(MyQuiz $quiz, $tagsInput): void
     {
-        $tags = collect(explode(',', $tagsString))
-            ->map(fn($tag) => trim($tag))
-            ->filter(fn($tag) => $tag !== '')
-            ->unique();
+        if (is_string($tagsInput)) {
+            $tags = collect(explode(',', $tagsInput))
+                ->map(fn($tag) => trim($tag))
+                ->filter(fn($tag) => $tag !== '')
+                ->unique();
+        } else {
+            $tags = collect($tagsInput ?? [])
+                ->map(fn($tag) => trim((string)$tag))
+                ->filter(fn($tag) => $tag !== '')
+                ->unique();
+        }
 
         $tagIds = $tags->map(function ($tagName) {
             return Tag::firstOrCreate(['name' => $tagName])->id_tag;

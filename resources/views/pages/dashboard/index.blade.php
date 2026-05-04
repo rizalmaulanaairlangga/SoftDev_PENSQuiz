@@ -35,7 +35,23 @@
                         </svg>
                     </div>
                     <div class="mt-4 text-center">
-                        <p class="text-2xl font-black tracking-tight text-slate-900">{{ $stat['value'] }}</p>
+                        <p class="text-2xl font-black tracking-tight text-slate-900" 
+                           x-data="{ count: 0, target: {{ (int) filter_var($stat['value'], FILTER_SANITIZE_NUMBER_INT) }} }" 
+                           x-init="setTimeout(() => { 
+                               let start = 0;
+                               let duration = 1500;
+                               let step = (timestamp) => {
+                                   if (!start) start = timestamp;
+                                   let progress = Math.min((timestamp - start) / duration, 1);
+                                   count = Math.floor(progress * target);
+                                   if (progress < 1) {
+                                       window.requestAnimationFrame(step);
+                                   }
+                               };
+                               window.requestAnimationFrame(step);
+                           }, 100)">
+                            <span x-text="count"></span>{{ strpos($stat['value'], '%') !== false ? '%' : '' }}
+                        </p>
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ $stat['label'] }}</p>
                     </div>
                 </div>
@@ -127,6 +143,24 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 2000,
+                    easing: 'easeOutQuart',
+                    delay: (context) => {
+                        let delay = 0;
+                        if (context.type === 'data' && context.mode === 'default') {
+                            delay = context.dataIndex * 150;
+                        }
+                        return delay;
+                    }
+                },
+                animations: {
+                    y: {
+                        from: (ctx) => ctx.chart.scales.y.getPixelForValue(0),
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                },
                 plugins: { legend: { display: false } },
                 scales: {
                     y: {
