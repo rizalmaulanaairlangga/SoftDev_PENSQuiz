@@ -27,7 +27,8 @@ class MyQuizController extends Controller
         $filterMajor = $request->input('major');
         $filterCourse = $request->input('course');
 
-        $query = MyQuiz::where('author_id', $userId)
+        $query = MyQuiz::withCount('questions')
+            ->where('author_id', $userId)
             ->with(['course', 'major', 'tags']);
 
         if ($visibility !== 'all') {
@@ -65,9 +66,9 @@ class MyQuizController extends Controller
         }
 
         if ($sort === 'latest') {
-            $query->orderByDesc('created_at')->orderByDesc('id_quiz');
+            $query->orderByDesc('updated_at')->orderByDesc('id_quiz');
         } elseif ($sort === 'oldest') {
-            $query->orderBy('created_at', 'asc')->orderBy('id_quiz', 'asc');
+            $query->orderBy('updated_at', 'asc')->orderBy('id_quiz', 'asc');
         }
 
         $perPage = $request->input('per_page', 10);
@@ -187,7 +188,7 @@ class MyQuizController extends Controller
             $quiz = MyQuiz::create([
                 'author_id' => Auth::id(),
                 'folder_id' => $request->input('folder_id'),
-                'title' => $validated['title'],
+                'title' => $validated['title'] ?? 'Untitled Quiz',
                 'description' => $validated['description'] ?? null,
 
                 'major_id' => $request->input('major_id'),
@@ -282,7 +283,7 @@ class MyQuizController extends Controller
             }
 
             $myquiz->update([
-                'title' => $validated['title'],
+                'title' => $validated['title'] ?? 'Untitled Quiz',
                 'description' => $validated['description'] ?? null,
                 'folder_id' => $request->input('folder_id', $myquiz->folder_id),
 
@@ -322,8 +323,10 @@ class MyQuizController extends Controller
 
     private function validateQuiz(Request $request): array
     {
+        $isPublish = $request->input('visibility') === 'published';
+
         return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => [$isPublish ? 'required' : 'nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
 
             'course_id' => ['nullable', 'integer', 'exists:courses,id_course'],
@@ -337,7 +340,7 @@ class MyQuizController extends Controller
             'remove_cover' => ['nullable', 'boolean'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
-            'major_id' => ['required', 'integer', 'exists:majors,id_major'],
+            'major_id' => [$isPublish ? 'required' : 'nullable', 'integer', 'exists:majors,id_major'],
             'folder_id' => ['nullable', 'integer', 'exists:folders,id_folder'],
         ]);
     }

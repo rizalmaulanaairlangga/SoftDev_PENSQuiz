@@ -1,38 +1,29 @@
-# Changelog
+# Changelog - PENSQuiz
 
-All notable changes to the PENSQuiz project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2026-05-02
-
-### Added
-- **Quiz Creation Wizard**:
-  - Implemented a new 3-stage workflow (Detail -> Questions -> Summary) for both creating and editing quizzes.
-  - Added a "Summary" stage for final review before publishing or saving as draft.
-  - Integrated a custom validation modal for the "Publish" action to ensure data integrity.
-  - Added smooth scroll-to-top transition between wizard stages.
-  - Implemented dynamic "Infinity" icon for quizzes without a time limit in the summary view.
-- **Profile Management**:
-  - Redesigned the Profile page with a modern dual-tab sidebar layout (Personal Information & Login Information).
-  - Added a live academic semester calculator using Alpine.js that updates instantly based on the "Year of Entry".
-  - Improved form validation visibility with a global error alert system.
-  - Added missing `username` field to the personal info form to ensure full database synchronization.
-- **Assets & Icons**:
-  - Integrated custom images for header dropdown menus (`img_myquizzes.png`, `img_create_quiz.png`, `img_profile.png`, etc.).
-  - Added a standard infinity SVG for the quiz duration preview.
-
-### Changed
-- **UI/UX Refinement**:
-  - Updated primary action buttons to use the brand blue color `#528FB9`.
-  - Standardized navigation button sizes across the quiz wizard for better consistency.
-  - Removed redundant icons from the duration input to prioritize native browser number controls.
-  - Redesigned the header profile dropdown with a modern card style and icon-left composition.
-  - Styled the sidebar navigation with soft blue hover effects and clear active/inactive states.
-- **Backend**:
-  - Updated `ProfileUpdateRequest` to validate `first_name`, `last_name`, `username`, `major_id`, and `year_of_entry`.
-  - Enhanced `MyQuizController` and `ProfileController` to handle the new 3-stage wizard and extended profile fields.
+## [2026-05-04] - Optimization & UI/UX Improvements
 
 ### Fixed
-- Fixed a critical syntax error in the Alpine.js `quizFormHandler` that caused the create quiz page to appear blank.
-- Resolved an issue where "Year of Entry" changes were not being persisted to the database due to missing validation fields.
-- Fixed Z-index conflicts in question cards that caused "Correct Answer" dropdowns to be clipped.
-- Corrected the academic semester formula to properly account for odd/even semester cycles.
+- **Question Counts**: Fixed an issue where the number of questions in a quiz was not displayed correctly in the "My Quizzes" and "Folder" views by using `withCount('questions')` in Eloquent queries.
+- **SQL Error 500**: Fixed a database error when adding a quiz to a folder caused by an incorrect table name reference in the validation rule.
+- **Save as Draft Logic**: 
+    - Fixed validation logic to allow saving as draft without a title or major.
+    - Added a default title ("Untitled Quiz") for draft quizzes if none is provided.
+    - Suppressed native browser "Leave Site?" warnings when the user clicks the "Save as Draft" button.
+- **Profile Tab Retention**: Fixed an issue where validation errors during password updates would cause the page to reset to the "Personal Information" tab. It now correctly remains on the "Login Info" tab.
+
+### Added
+- **Search Functionality**: Added a search bar to the Folder view, allowing users to filter quizzes by title, tags, major, and course.
+- **Unsaved Changes Interceptor**: Implemented a custom Alpine.js-based modal that warns users when they attempt to navigate away from the Quiz Form with unsaved changes.
+- **Clean Code Comments**: Added detailed block comments throughout `form.blade.php` and `profile/edit.blade.php` to explain logic for state management, initialization, and UI helpers.
+
+### Changed (UI/UX)
+- **Profile Avatar Synchronization**: Updated the profile page avatar to match the dynamic initial-based style used in the top navigation bar.
+- **Responsive Quiz Form**: Optimized the quiz form navigation buttons for mobile and tablet views, using a flexible column layout to prevent overlapping.
+- **Mobile Profile Navigation**: Transformed the profile sidebar navigation into a custom dropdown menu for mobile and tablet devices, improving space efficiency and usability.
+- **Overall Aesthetics**: Refined various UI elements (paddings, border-radius, shadows) across the dashboard, folder, and profile pages to maintain a premium, modern feel.
+
+### Technical
+- Refactored `submitQuizForm` to be a method within the Alpine.js component for better state management.
+- Integrated `isSubmitting` flag to handle navigation state and prevent duplicate submissions or unwanted warnings.

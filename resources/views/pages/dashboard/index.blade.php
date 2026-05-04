@@ -1,22 +1,32 @@
 {{-- resources/views/pages/dashboard/index.blade.php --}}
 <x-app-layout>
-    <div class="space-y-8">
-        <!-- 1. GREETING SECTION -->
-        <section class="relative overflow-hidden rounded-[32px] bg-[linear-gradient(145deg,#a8dbf1_0%,#79b7dc_52%,#4b87b2_100%)] px-8 py-10 shadow-lg">
+    {{-- Wrapper utama dengan jarak vertikal yang responsif (lebih rapat di mobile, lebih longgar di tablet/desktop) --}}
+    <div class="space-y-6 sm:space-y-8">
+        
+        {{-- ================================================================ --}}
+        {{-- 1. GREETING SECTION                                              --}}
+        {{-- Menampilkan pesan selamat datang untuk user yang sedang login.   --}}
+        {{-- Menggunakan gradient biru PENS dan efek drop-shadow untuk teks.  --}}
+        {{-- ================================================================ --}}
+        <section class="relative overflow-hidden rounded-[24px] sm:rounded-[32px] bg-[linear-gradient(145deg,#a8dbf1_0%,#79b7dc_52%,#4b87b2_100%)] px-6 py-8 sm:px-8 sm:py-10 shadow-lg">
             <div class="relative z-10">
-                <h1 class="text-4xl font-black tracking-tight text-white sm:text-5xl drop-shadow-md">
+                <h1 class="text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl drop-shadow-md">
                     Helloo, <span class="text-[#fdc02a]">{{ auth()->user()->first_name }}!</span>
                 </h1>
-                <p class="mt-4 max-w-2xl text-lg font-medium text-white drop-shadow">
+                <p class="mt-3 sm:mt-4 max-w-2xl text-base sm:text-lg font-medium text-white drop-shadow">
                     Welcome back to PENS<span class="text-[#fdc02a]">Quiz</span>. Your centralized hub for <span class="text-[#fdc02a]">creating</span>, <span class="text-[#fdc02a]">managing</span>, and <span class="text-[#fdc02a]">exploring</span> high-quality educational quizzes.
                 </p>
             </div>
-            <!-- Subtle background decoration -->
+            <!-- Dekorasi latar belakang (lingkaran blur) -->
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/20 blur-3xl"></div>
         </section>
 
-        <!-- 2. STATISTICS (HORIZONTAL ROW) -->
-        <section class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+        {{-- ================================================================ --}}
+        {{-- 2. STATISTICS SECTION                                            --}}
+        {{-- Grid statistik data kuis. Responsif dari 2 kolom (mobile),       --}}
+        {{-- 3 kolom (tablet), hingga 5 kolom (desktop lebar).                --}}
+        {{-- ================================================================ --}}
+        <section class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5 lg:gap-6">
             @php
                 $stats = [
                     ['label' => 'Quizzes Created', 'value' => $quizCount, 'icon' => 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13M3 19c1.5-1 3-1.5 4.5-1.5S10.5 18 12 19m9-12C19.168 5.477 17.586 5 15.832 5c-1.746 0-3.332.477-4.5 1.253v13C12.5 18.477 14.168 18 15.832 18s3.332.477 4.5 1.253V6.253z', 'color' => 'bg-blue-500'],
@@ -28,14 +38,17 @@
             @endphp
 
             @foreach($stats as $stat)
-                <div class="group flex flex-col items-center justify-center rounded-[24px] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(16,72,118,0.25)]">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $stat['color'] }} text-white shadow-lg shadow-{{ explode('-', $stat['color'])[1] }}-500/20">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {{-- Kartu individu untuk setiap statistik --}}
+                <div class="group flex flex-col items-center justify-center rounded-[20px] sm:rounded-[24px] bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(16,72,118,0.25)]">
+                    {{-- Ikon --}}
+                    <div class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl {{ $stat['color'] }} text-white shadow-lg shadow-{{ explode('-', $stat['color'])[1] }}-500/20">
+                        <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $stat['icon'] }}"></path>
                         </svg>
                     </div>
-                    <div class="mt-4 text-center">
-                        <p class="text-2xl font-black tracking-tight text-slate-900" 
+                    {{-- Nilai & Label (menggunakan Alpine.js untuk animasi counter) --}}
+                    <div class="mt-3 sm:mt-4 text-center">
+                        <p class="text-xl sm:text-2xl font-black tracking-tight text-slate-900" 
                            x-data="{ count: 0, target: {{ (int) filter_var($stat['value'], FILTER_SANITIZE_NUMBER_INT) }} }" 
                            x-init="setTimeout(() => { 
                                let start = 0;
@@ -52,25 +65,34 @@
                            }, 100)">
                             <span x-text="count"></span>{{ strpos($stat['value'], '%') !== false ? '%' : '' }}
                         </p>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ $stat['label'] }}</p>
+                        <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">{{ $stat['label'] }}</p>
                     </div>
                 </div>
             @endforeach
         </section>
 
-        <!-- 3. MAIN CONTENT GRID (3 COLUMNS) -->
-        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {{-- ================================================================ --}}
+        {{-- 3. MAIN CONTENT GRID                                             --}}
+        {{-- Grid utama yang terbagi menjadi 2 bagian utama:                  --}}
+        {{-- Kiri (Recently Opened) - memakan 2/3 layar pada desktop.         --}}
+        {{-- Kanan (Charts & Performance) - memakan 1/3 layar pada desktop.   --}}
+        {{-- ================================================================ --}}
+        <div class="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3">
             
-            <!-- LEFT (2 COLUMNS): RECENTLY OPENED -->
+            {{-- ---------------------------------------------------------------- --}}
+            {{-- A. KIRI: RECENTLY OPENED QUIZZES                                 --}}
+            {{-- ---------------------------------------------------------------- --}}
             <section class="lg:col-span-2">
-                <div class="flex h-full flex-col overflow-hidden rounded-[32px] bg-white shadow-sm border border-slate-100">
-                    <div class="flex items-center justify-between border-b border-slate-50 px-8 py-6">
-                        <h2 class="text-xl font-black tracking-tight text-slate-900">Recently Opened</h2>
-                        <a href="{{ route('quizzes.index') }}" class="text-sm font-bold text-[#6BA9D0] hover:underline">View All</a>
+                <div class="flex h-full flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] bg-white shadow-sm border border-slate-100">
+                    {{-- Header Section --}}
+                    <div class="flex items-center justify-between border-b border-slate-50 px-6 py-5 sm:px-8 sm:py-6">
+                        <h2 class="text-lg sm:text-xl font-black tracking-tight text-slate-900">Recently Opened</h2>
+                        <a href="{{ route('quizzes.index') }}" class="text-xs sm:text-sm font-bold text-[#6BA9D0] hover:underline">View All</a>
                     </div>
                     
-                    <!-- SCROLLABLE CONTAINER -->
-                    <div class="flex-1 overflow-y-auto p-8 max-h-[600px] scrollbar-hide">
+                    {{-- Kontainer Kuis (Bisa di-scroll) --}}
+                    <div class="flex-1 overflow-y-auto p-5 sm:p-8 max-h-[500px] sm:max-h-[600px] scrollbar-hide">
+                        {{-- Grid internal untuk daftar kuis --}}
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             @forelse($recentlyOpened as $quiz)
                                 @include('pages.quiz.partials.quiz-card', ['quiz' => $quiz, 'class' => 'w-full h-full'])
@@ -81,40 +103,43 @@
                             @endforelse
                         </div>
                     </div>
-                    <!-- Fade effect at bottom -->
+                    {{-- Efek fade out di bagian bawah kontainer scroll --}}
                     <div class="h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
                 </div>
             </section>
 
-            <!-- RIGHT (1 COLUMN): DATA AREA -->
-            <section class="space-y-8">
-                <!-- CHART -->
-                <div class="rounded-[32px] bg-white p-8 shadow-sm border border-slate-100">
-                    <h2 class="text-xl font-black tracking-tight text-slate-900">Quiz Completed</h2>
-                    <div class="mt-8 h-[240px]">
+            {{-- ---------------------------------------------------------------- --}}
+            {{-- B. KANAN: DATA AREA (CHART & PERFORMANCE)                        --}}
+            {{-- ---------------------------------------------------------------- --}}
+            <section class="space-y-6 sm:space-y-8">
+                
+                {{-- Chart Area --}}
+                <div class="rounded-[24px] sm:rounded-[32px] bg-white p-6 sm:p-8 shadow-sm border border-slate-100">
+                    <h2 class="text-lg sm:text-xl font-black tracking-tight text-slate-900">Quiz Completed</h2>
+                    <div class="mt-6 sm:mt-8 h-[200px] sm:h-[240px]">
                         <canvas id="quizChart"></canvas>
                     </div>
                 </div>
 
-                <!-- PERFORMANCE PANEL -->
-                <div class="rounded-[32px] bg-white p-8 shadow-sm border border-slate-100">
-                    <h2 class="text-xl font-black tracking-tight text-slate-900">Performance Overview</h2>
-                    <div class="mt-8 space-y-4">
+                {{-- Performance Overview Area --}}
+                <div class="rounded-[24px] sm:rounded-[32px] bg-white p-6 sm:p-8 shadow-sm border border-slate-100">
+                    <h2 class="text-lg sm:text-xl font-black tracking-tight text-slate-900">Performance Overview</h2>
+                    <div class="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
                         @foreach([
                             ['label' => 'Total Attempts', 'value' => $attempts, 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z'],
                             ['label' => 'Active Participants', 'value' => $participants, 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
                             ['label' => 'Completion Rate', 'value' => $completionRate . '%', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
                         ] as $perf)
-                            <div class="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_8px_25px_rgba(16,72,118,0.2)]">
+                            <div class="flex items-center justify-between rounded-2xl bg-slate-50 p-3 sm:p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_8px_25px_rgba(16,72,118,0.2)]">
                                 <div class="flex items-center gap-3">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#6BA9D0] shadow-sm">
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white text-[#6BA9D0] shadow-sm">
+                                        <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $perf['icon'] }}"></path>
                                         </svg>
                                     </div>
-                                    <span class="text-sm font-bold text-slate-500 uppercase tracking-wide">{{ $perf['label'] }}</span>
+                                    <span class="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wide">{{ $perf['label'] }}</span>
                                 </div>
-                                <span class="text-lg font-black text-slate-900">{{ $perf['value'] }}</span>
+                                <span class="text-base sm:text-lg font-black text-slate-900">{{ $perf['value'] }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -123,6 +148,10 @@
         </div>
     </div>
 
+    {{-- ================================================================ --}}
+    {{-- 4. JAVASCRIPT / CHART SETUP                                      --}}
+    {{-- Konfigurasi Chart.js untuk menampilkan grafik aktivitas kuis.    --}}
+    {{-- ================================================================ --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const ctx = document.getElementById('quizChart').getContext('2d');
@@ -135,9 +164,9 @@
                 datasets: [{
                     data: chartData,
                     backgroundColor: '#6BA9D0',
-                    borderRadius: 12,
+                    borderRadius: 8, // Sedikit disesuaikan agar proporsional di semua layar
                     borderSkipped: false,
-                    barThickness: 24,
+                    barThickness: window.innerWidth < 640 ? 12 : 24, // Bar sedikit lebih ramping di mobile
                 }]
             },
             options: {
@@ -173,6 +202,15 @@
                         ticks: { font: { weight: 'bold' }, color: '#94a3b8' }
                     }
                 }
+            }
+        });
+
+        // Event listener tambahan untuk me-resize barThickness saat orientasi berubah
+        window.addEventListener('resize', () => {
+            const chart = Chart.getChart("quizChart");
+            if (chart) {
+                chart.data.datasets[0].barThickness = window.innerWidth < 640 ? 12 : 24;
+                chart.update();
             }
         });
     </script>
