@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-05-06] - Quiz Functionality & Data Consistency Improvements
+
+### Fixed
+- **Option Selection UI**: Fixed a CSS conflict on the play page where selecting an option caused the choice letter (A, B, C...) to disappear due to background color overrides.
+- **Checkbox Logic**: Corrected the question type identification in the quiz engine from `multiple_answer` to `checkbox` to match the database, enabling correct multi-select behavior.
+- **Seeder Consistency**: 
+    - Fixed `OptionSeeder` and `AttemptSeeder` logic which previously failed to distinguish between single and multiple choice questions, leading to incorrect correct-answer counts in seeded data.
+    - Standardized types to `multiple_choice` (single answer) and `checkbox` (multiple answers) across all seeders.
+
+### Added
+- **Navigation Safety**:
+    - Implemented a "Leave Quiz" confirmation modal on the play page to prevent accidental exits.
+    - The modal informs users that their progress is saved and the timer will be paused, allowing them to resume later.
+    - Integrated `beforeunload` browser event for native navigation protection.
+- **Continue Quiz UX**: 
+    - Added a confirmation modal when continuing an existing attempt from the quiz detail page.
+    - Displays dynamic statistics: the number of remaining unanswered questions and the exact time left.
+- **Dynamic Instructions**: The play page now dynamically displays the number of required selections for checkbox questions (e.g., "Select 2 answers").
+
+### Changed
+- **Validation Rules**: Updated `MyQuizController` to strictly enforce that `checkbox` questions must have at least 2 correct options, ensuring data integrity for multiple-choice questions.
+
+### Technical
+- Refactored `OptionSeeder` to use `shuffle` and `array_slice` for generating a valid subset of correct options for checkbox questions.
+- Synchronized frontend and backend question type naming conventions (`multiple_choice` vs `checkbox`).
+
+
 ## [2026-05-04] - Optimization & UI/UX Improvements
 
 ### Fixed

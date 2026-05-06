@@ -18,14 +18,14 @@ class OptionSeeder extends Seeder
 
         foreach ($questions as $question) {
 
-            if ($question->question_type === 'single_answer') {
-                // 4 option, 1 benar
-                $correctIndex = rand(0,3);
+            if ($question->question_type === 'multiple_choice') {
+                // multiple_choice: 4 options, exactly 1 correct
+                $correctIndex = rand(0, 3);
 
                 for ($i = 0; $i < 4; $i++) {
                     $options[] = [
                         'question_id' => $question->id_question,
-                        'content' => "Option " . chr(65+$i),
+                        'content' => "Option " . chr(65 + $i),
                         'is_correct' => $i === $correctIndex,
                         'order_index' => $i,
                         'created_at' => $now,
@@ -34,14 +34,16 @@ class OptionSeeder extends Seeder
                 }
 
             } else {
-                // multi: 4 option, 2 benar
-                $correctIndexes = array_rand([0,1,2,3], 2);
+                // checkbox: 4 options, exactly 2 correct
+                $allIndexes = [0, 1, 2, 3];
+                shuffle($allIndexes);
+                $correctIndexes = array_slice($allIndexes, 0, 2);
 
                 for ($i = 0; $i < 4; $i++) {
                     $options[] = [
                         'question_id' => $question->id_question,
-                        'content' => "Option " . chr(65+$i),
-                        'is_correct' => in_array($i, (array)$correctIndexes),
+                        'content' => "Option " . chr(65 + $i),
+                        'is_correct' => in_array($i, $correctIndexes),
                         'order_index' => $i,
                         'created_at' => $now,
                         'updated_at' => $now,

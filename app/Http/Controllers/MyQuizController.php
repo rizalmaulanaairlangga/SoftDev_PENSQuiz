@@ -403,9 +403,9 @@ class MyQuizController extends Controller
                 ]);
             }
 
-            if ($strict && $type === 'checkbox' && count($correctIndexes) < 1) {
+            if ($strict && $type === 'checkbox' && count($correctIndexes) < 2) {
                 throw ValidationException::withMessages([
-                    'questions' => 'Checkbox questions need at least 1 correct option.',
+                    'questions' => 'Checkbox questions need at least 2 correct options.',
                 ]);
             }
 

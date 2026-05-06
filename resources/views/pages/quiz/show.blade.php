@@ -139,11 +139,11 @@
 
             {{-- Tombol Start/Continue Quiz --}}
             @if($existingAttempt)
-                <a href="{{ route('attempt.play', $existingAttempt->id_attempt) }}"
+                <button type="button" onclick="toggleContinueModal(true)"
                    class="bg-[#16a34a] text-white font-bold text-[15px] sm:text-[16px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-[16px] w-full sm:w-auto flex items-center justify-center gap-2 hover:bg-[#15803d] transition shadow-lg shadow-green-500/20">
                     Continue Quiz
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                </a>
+                </button>
             @else
                 <form id="startQuizForm" method="POST" action="{{ route('quiz.start', $quiz->id_quiz) }}" class="w-full sm:w-auto flex-1">
                     @csrf
@@ -271,6 +271,7 @@
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             toggleModal(false);
+            if (typeof toggleContinueModal === 'function') toggleContinueModal(false);
         }
     });
 
@@ -280,6 +281,79 @@
             toggleModal(false);
         }
     });
+
+    @if($existingAttempt)
+    function toggleContinueModal(show) {
+        const modal = document.getElementById('continueQuizModal');
+        const content = document.getElementById('continueQuizContent');
+        
+        if (show) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Force reflow
+            void modal.offsetWidth;
+            content.classList.remove('opacity-0', 'scale-95');
+            content.classList.add('opacity-100', 'scale-100');
+            document.body.style.overflow = 'hidden';
+        } else {
+            content.classList.add('opacity-0', 'scale-95');
+            content.classList.remove('opacity-100', 'scale-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+    }
+
+    document.getElementById('continueQuizModal').addEventListener('click', (e) => {
+        if (e.target.id === 'continueQuizModal') {
+            toggleContinueModal(false);
+        }
+    });
+    @endif
 </script>
+
+@if($existingAttempt)
+{{-- ================================================================ --}}
+{{-- 7. MODAL KONFIRMASI CONTINUE KUIS                                --}}
+{{-- ================================================================ --}}
+<div id="continueQuizModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md transition-all duration-300">
+    {{-- Konten Modal --}}
+    <div id="continueQuizContent" class="bg-white w-full max-w-4xl rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 md:p-16 shadow-[0_20px_70px_-10px_rgba(0,0,0,0.1)] relative opacity-0 scale-95 transition-all duration-300 ease-out">
+        
+        <!-- Back Button -->
+        <button onclick="toggleContinueModal(false)" class="absolute top-6 left-6 md:top-10 md:left-10 flex items-center gap-2 font-bold text-gray-800 hover:text-black transition group text-sm sm:text-base">
+            <div class="bg-gray-100 p-2 rounded-full group-hover:bg-gray-200 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </div>
+            Back
+        </button>
+
+        <div class="flex flex-col items-center justify-center py-16 sm:py-20 text-center mt-8 sm:mt-0">
+            <h2 class="text-2xl sm:text-[36px] md:text-[48px] font-black text-gray-900 leading-tight tracking-tight">
+                Continue your quiz?
+            </h2>
+            <p class="mt-4 sm:mt-6 text-base sm:text-[18px] md:text-[22px] font-medium text-gray-500 px-4 sm:px-0">
+                You have <span class="font-bold text-gray-900">{{ $unansweredCount }}</span> unanswered questions.
+                <br>
+                Remaining time: <span class="font-bold text-gray-900">{{ $remainingTimeText }}</span>
+            </p>
+        </div>
+
+        <!-- Continue Button -->
+        <div class="flex justify-end mt-4 sm:mt-8 w-full">
+            <a href="{{ route('attempt.play', $existingAttempt->id_attempt) }}" class="w-full sm:w-auto bg-[#16a34a] text-white font-bold text-[16px] sm:text-[18px] px-8 sm:px-10 py-4 sm:py-5 rounded-[16px] sm:rounded-[20px] flex items-center justify-center gap-3 hover:bg-[#15803d] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-green-500/30 group">
+                Continue Quiz
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+@endif
 
 </x-app-layout>

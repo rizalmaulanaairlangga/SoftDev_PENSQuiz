@@ -221,6 +221,32 @@ class DiscoverController extends Controller
             ->latest()
             ->first();
 
+        $unansweredCount = 0;
+        $remainingTimeText = 'No Time Limit';
+
+        if ($existingAttempt) {
+            $totalQuestions = DB::table('snapshot_questions')
+                ->where('snapshot_id', $existingAttempt->snapshot_id)
+                ->count();
+                
+            $answeredQuestions = DB::table('attempt_answers')
+                ->join('attempt_answer_options', 'attempt_answers.id_attempt_answer', '=', 'attempt_answer_options.attempt_answer_id')
+                ->where('attempt_answers.attempt_id', $existingAttempt->id_attempt)
+                ->distinct('attempt_answers.snapshot_question_id')
+                ->count('attempt_answers.snapshot_question_id');
+                
+            $unansweredCount = max(0, $totalQuestions - $answeredQuestions);
+
+            if ($quiz->time_limit_minutes) {
+                $remSeconds = ($quiz->time_limit_minutes * 60) - $existingAttempt->duration_seconds;
+                if ($remSeconds > 0) {
+                    $remainingTimeText = floor($remSeconds / 60) . ' mins ' . ($remSeconds % 60) . ' secs';
+                } else {
+                    $remainingTimeText = 'Time is up';
+                }
+            }
+        }
+
         // Track quiz history
         if (Auth::check()) {
             \App\Models\QuizHistory::updateOrCreate(
@@ -249,7 +275,9 @@ class DiscoverController extends Controller
             'existingAttempt',
             'usersClicked',
             'participants',
-            'completionRate'
+            'completionRate',
+            'unansweredCount',
+            'remainingTimeText'
         ));
     }
     public function copy(Request $request, $id)
