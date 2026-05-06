@@ -164,6 +164,24 @@
         </div>
     </div>
 
+    {{-- Leave Warning Modal --}}
+    <div id="leaveModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/40 backdrop-blur-md transition-all duration-300">
+        <div id="leaveContent" class="bg-white w-full max-w-lg rounded-[32px] p-8 shadow-2xl relative opacity-0 scale-95 transition-all duration-300 ease-out text-center">
+            <h2 class="text-[28px] font-black text-gray-900 leading-tight mb-4">Leave quiz?</h2>
+            <p class="text-[16px] font-medium text-gray-500 mb-8">
+                Your progress is saved and your timer will be paused. You can continue this quiz later.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 w-full">
+                <button onclick="leaveQuiz()" class="w-full sm:w-1/2 bg-gray-100 text-gray-700 font-bold px-6 py-4 rounded-full hover:bg-gray-200 transition">
+                    Leave Quiz
+                </button>
+                <button onclick="toggleLeaveModal(false)" class="w-full sm:w-1/2 bg-[#518DB7] text-white font-bold px-6 py-4 rounded-full hover:bg-[#3E779F] transition shadow-lg">
+                    Stay
+                </button>
+            </div>
+        </div>
+    </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const questions = @json($questions);
@@ -256,7 +274,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.handleHeaderBack = function() {
-        if (currentState === 'quiz') window.location.href = '{{ route('quizzes.index') }}';
+        if (currentState === 'quiz') {
+            pendingUrl = '{{ route('quizzes.index') }}';
+            toggleLeaveModal(true);
+        }
         else if (currentState === 'check') goToQuizView();
         else if (currentState === 'sure-submit') goToCheckView();
         else if (currentState === 'result') window.location.href = '{{ route('quizzes.index') }}';
@@ -273,14 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const container = document.getElementById('options-container');
         container.innerHTML = '';
-        const multiple = q.question_type === 'multiple_answer';
+        const multiple = q.question_type === 'checkbox';
         document.getElementById('question-instruction').innerText = multiple ? `Select ${q.correct_count || 'multiple'} answers` : 'Select one answer';
 
         q.options.forEach((opt, i) => {
             const selected = (Array.isArray(getSavedAnswer(q.id_snapshot_question)) ? getSavedAnswer(q.id_snapshot_question) : [getSavedAnswer(q.id_snapshot_question)]).map(Number).includes(Number(opt.id_snapshot_option));
             const btn = document.createElement('button');
             btn.className = `flex items-center gap-6 bg-[#f5f5f5] rounded-[24px] p-5 text-left transition-all hover:bg-gray-200 group ring-2 ${selected ? 'ring-[#518DB7] bg-blue-50/50' : 'ring-transparent'}`;
-            btn.innerHTML = `<div class="bg-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-[18px] text-gray-700 shrink-0 shadow-sm ${selected ? 'bg-[#518DB7] !text-white' : ''}">${String.fromCharCode(65 + i)}</div><div class="text-[17px] md:text-[19px] font-medium text-gray-800">${opt.content}</div>`;
+            const letterBgClass = selected ? 'bg-[#518DB7] text-white' : 'bg-white text-gray-700';
+            btn.innerHTML = `<div class="${letterBgClass} rounded-full w-12 h-12 flex items-center justify-center font-bold text-[18px] shrink-0 shadow-sm">${String.fromCharCode(65 + i)}</div><div class="text-[17px] md:text-[19px] font-medium text-gray-800">${opt.content}</div>`;
             btn.onclick = () => {
                 let currentAnswers = Array.isArray(getSavedAnswer(q.id_snapshot_question)) ? [...getSavedAnswer(q.id_snapshot_question)].map(Number) : (getSavedAnswer(q.id_snapshot_question) ? [Number(getSavedAnswer(q.id_snapshot_question))] : []);
                 if (multiple) {
@@ -288,8 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (idx >= 0) {
                         currentAnswers.splice(idx, 1);
                     } else {
-                        if (currentAnswers.length >= q.correct_count) {
-                            currentAnswers.shift(); // Remove the first one selected
+                        if (q.correct_count && currentAnswers.length >= q.correct_count) {
+                            currentAnswers.shift(); // Remove oldest when limit reached
                         }
                         currentAnswers.push(Number(opt.id_snapshot_option));
                     }
@@ -339,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('review-question-content').innerText = q.content;
         const container = document.getElementById('review-options-container');
         container.innerHTML = '';
-        const multiple = q.question_type === 'multiple_answer';
+        const multiple = q.question_type === 'checkbox';
         document.getElementById('review-question-instruction').innerText = multiple ? `Select ${q.correct_count || 'multiple'} answers` : 'Select one answer';
         const userAnswers = (Array.isArray(getSavedAnswer(q.id_snapshot_question)) ? getSavedAnswer(q.id_snapshot_question) : [getSavedAnswer(q.id_snapshot_question)]).map(Number);
 
@@ -363,7 +385,58 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prevBtn').onclick = () => { if (current > 0) { current--; localStorage.setItem(STORAGE_KEY, current); renderQuiz(); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
     document.getElementById('nextBtn').onclick = () => { if (current < questions.length - 1) { current++; localStorage.setItem(STORAGE_KEY, current); renderQuiz(); window.scrollTo({ top: 0, behavior: 'smooth' }); } else { goToCheckView(); } };
 
+    let isSubmittingQuiz = false;
+    let pendingUrl = null;
+
+    // Leave Interceptor
+    window.addEventListener('beforeunload', (e) => {
+        if (!isSubmittingQuiz && !['result', 'review-grid', 'review-detail'].includes(currentState)) {
+            e.preventDefault();
+            e.returnValue = 'You are still in a quiz. Are you sure you want to leave?';
+            return e.returnValue;
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            const href = link.getAttribute('href');
+            if (!isSubmittingQuiz && !['result', 'review-grid', 'review-detail'].includes(currentState) && href && href !== '#' && !href.startsWith('javascript:')) {
+                e.preventDefault();
+                pendingUrl = href;
+                toggleLeaveModal(true);
+            }
+        }
+    }, true);
+
+    window.toggleLeaveModal = function(show) {
+        const m = document.getElementById('leaveModal');
+        const c = document.getElementById('leaveContent');
+        if (show) { 
+            m.classList.replace('hidden', 'flex'); 
+            void m.offsetWidth; 
+            c.classList.replace('opacity-0', 'opacity-100'); 
+            c.classList.replace('scale-95', 'scale-100');
+            pauseTimer(); 
+        } else { 
+            c.classList.replace('opacity-100', 'opacity-0'); 
+            c.classList.replace('scale-100', 'scale-95'); 
+            setTimeout(() => m.classList.replace('flex', 'hidden'), 300);
+            if (!['result', 'review-grid', 'review-detail'].includes(currentState)) resumeTimer();
+        }
+    };
+    
+    window.leaveQuiz = function() {
+        isSubmittingQuiz = true; // bypass intercept
+        if (pendingUrl) {
+            window.location.href = pendingUrl;
+        } else {
+            window.history.back();
+        }
+    };
+
     window.submitQuizAction = async function() {
+        isSubmittingQuiz = true;
         pauseTimer();
         await fetch('{{ route('attempt.submit') }}', { method: 'POST', headers: {'Content-Type': 'application/json','X-CSRF-TOKEN': '{{ csrf_token() }}'}, body: JSON.stringify({ attempt_id: attemptId, duration_seconds: durationSeconds }) });
         localStorage.removeItem(STORAGE_KEY);
@@ -383,6 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let timerInterval = setInterval(() => { if (!isPaused) { durationSeconds++; updateTimerUI(); } }, 1000);
     let isPaused = false;
     function pauseTimer() { isPaused = true; }
+    function resumeTimer() { isPaused = false; }
     function updateTimerUI() {
         if (!timeLimitMinutes) { document.getElementById('timerDisplay').innerText = formatTime(durationSeconds); document.getElementById('timerLabel').innerText = "elapsed"; return; }
         const rem = (timeLimitMinutes * 60) - durationSeconds;

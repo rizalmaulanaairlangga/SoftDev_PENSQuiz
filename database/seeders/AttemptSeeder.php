@@ -61,7 +61,7 @@ class AttemptSeeder extends Seeder
 
                     $selectedOptions = [];
 
-                    if ($question->question_type === 'single') {
+                    if ($question->question_type === 'multiple_choice') {
 
                         // pilih 1 random
                         $selected = $options->random();
