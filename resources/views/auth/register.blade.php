@@ -170,6 +170,23 @@
                                     </div>
                                 </div>
 
+                                {{-- Input Username --}}
+                                <div>
+                                    <label for="username" class="block text-sm font-medium text-[#171717]">
+                                        Username
+                                    </label>
+                                    <input
+                                        id="username"
+                                        type="text"
+                                        name="username"
+                                        value="{{ old('username') }}"
+                                        placeholder="johndoe123"
+                                        required
+                                        class="mt-2 h-12 w-full rounded-[16px] border border-[#6f6b69] bg-white px-5 text-base font-medium text-black placeholder:text-[#a9a0a0] shadow-sm transition focus:border-transparent focus:outline-none focus:ring-4 focus:ring-[#1d5687]/20"
+                                    >
+                                    <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                                </div>
+
                                 {{-- Input Email --}}
                                 <div>
                                     <label for="email" class="block text-sm font-medium text-[#171717]">

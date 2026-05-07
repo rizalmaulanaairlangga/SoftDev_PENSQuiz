@@ -65,32 +65,32 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-bold text-black mb-3">Quiz Major</label>
-                                <div x-data="{ open: false, value: '{{ old('major_id', $quiz->major_id ?? '') }}', label: '{{ old('major_id', $quiz->major_id) && $majors->firstWhere('id_major', old('major_id', $quiz->major_id)) ? $majors->firstWhere('id_major', old('major_id', $quiz->major_id))->name : 'Choose your quiz major here' }}' }" class="relative">
-                                    <input type="hidden" name="major_id" x-model="value" @change="major_id = value; isDirty = true">
+                                <div x-data="{ open: false }" class="relative">
+                                    <input type="hidden" name="major_id" x-model="major_id">
                                     <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
-                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <span x-text="getSelectedMajorName() || 'Choose your quiz major here'" class="truncate pr-4"></span>
                                         <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                                     </button>
                                     <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
-                                        <div @click="value = ''; label = 'Choose your quiz major here'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz major here</div>
+                                        <div @click="major_id = ''; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz major here</div>
                                         @foreach($majors as $major)
-                                            <div @click="value = '{{ $major->id_major }}'; label = '{{ $major->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $major->id_major }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $major->name }}</div>
+                                            <div @click="major_id = '{{ $major->id_major }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="major_id == '{{ $major->id_major }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $major->name }}</div>
                                         @endforeach
                                     </div>
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-black mb-3">Quiz Course</label>
-                                <div x-data="{ open: false, value: '{{ old('course_id', $quiz->course_id ?? '') }}', label: '{{ old('course_id', $quiz->course_id) && $courses->firstWhere('id_course', old('course_id', $quiz->course_id)) ? $courses->firstWhere('id_course', old('course_id', $quiz->course_id))->name : 'Choose your quiz course here' }}' }" class="relative">
-                                    <input type="hidden" name="course_id" x-model="value" @change="course_id = value; isDirty = true">
+                                <div x-data="{ open: false }" class="relative">
+                                    <input type="hidden" name="course_id" x-model="course_id">
                                     <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
-                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <span x-text="getSelectedCourseName() || 'Choose your quiz course here'" class="truncate pr-4"></span>
                                         <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                                     </button>
                                     <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
-                                        <div @click="value = ''; label = 'Choose your quiz course here'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz course here</div>
+                                        <div @click="course_id = ''; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">Choose your quiz course here</div>
                                         @foreach($courses as $course)
-                                            <div @click="value = '{{ $course->id_course }}'; label = '{{ $course->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $course->id_course }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $course->name }}</div>
+                                            <div @click="course_id = '{{ $course->id_course }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="course_id == '{{ $course->id_course }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $course->name }}</div>
                                         @endforeach
                                     </div>
                                 </div>
@@ -100,16 +100,16 @@
                         <!-- Folder Selection -->
                         <div>
                             <label class="block text-sm font-bold text-black mb-3">Quiz Folder (Optional)</label>
-                            <div x-data="{ open: false, value: '{{ old('folder_id', $quiz->folder_id ?? '') }}', label: '{{ old('folder_id', $quiz->folder_id) && $folders->firstWhere('id_folder', old('folder_id', $quiz->folder_id)) ? $folders->firstWhere('id_folder', old('folder_id', $quiz->folder_id))->name : 'No Folder' }}' }" class="relative">
-                                <input type="hidden" name="folder_id" x-model="value" @change="folder_id = value; isDirty = true">
+                            <div x-data="{ open: false }" class="relative">
+                                <input type="hidden" name="folder_id" x-model="folder_id">
                                 <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
-                                    <span x-text="label" class="truncate pr-4"></span>
+                                    <span x-text="getSelectedFolderName() || 'No Folder'" class="truncate pr-4"></span>
                                     <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                                 </button>
                                 <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1">
-                                    <div @click="value = ''; label = 'No Folder'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">No Folder</div>
+                                    <div @click="folder_id = ''; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl">No Folder</div>
                                     @foreach($folders as $folder)
-                                        <div @click="value = '{{ $folder->id_folder }}'; label = '{{ $folder->name }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == '{{ $folder->id_folder }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $folder->name }}</div>
+                                        <div @click="folder_id = '{{ $folder->id_folder }}'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="folder_id == '{{ $folder->id_folder }}' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">{{ $folder->name }}</div>
                                     @endforeach
                                 </div>
                             </div>
@@ -149,15 +149,15 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-black mb-3">Access</label>
-                                <div x-data="{ open: false, value: '{{ old('access', $quiz->access ?? 'private') }}', label: '{{ old('access', $quiz->access) == 'public' ? 'Public' : 'Private' }}' }" class="relative">
-                                    <input type="hidden" name="access" x-model="value" @change="access = value; isDirty = true">
+                                <div x-data="{ open: false }" class="relative">
+                                    <input type="hidden" name="access" x-model="access">
                                     <button type="button" @click="open = !open" @click.away="open = false" class="w-full rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-black transition focus:border-[#528FB9] focus:ring-2 focus:ring-[#528FB9]/20 focus:outline-none flex items-center justify-between shadow-sm hover:border-[#528FB9]">
-                                        <span x-text="label" class="truncate pr-4"></span>
+                                        <span x-text="access === 'public' ? 'Public' : 'Private'" class="truncate pr-4"></span>
                                         <svg class="w-4 h-4 text-gray-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                                     </button>
                                     <div x-show="open" x-transition style="display: none;" class="absolute z-[60] mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden py-1">
-                                        <div @click="value = 'private'; label = 'Private'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == 'private' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Private</div>
-                                        <div @click="value = 'public'; label = 'Public'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="value == 'public' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Public</div>
+                                        <div @click="access = 'private'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="access == 'private' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Private</div>
+                                        <div @click="access = 'public'; open = false" class="px-5 py-3 text-sm text-gray-700 hover:bg-[#528FB9] hover:text-white cursor-pointer transition mx-1 rounded-xl" :class="access == 'public' ? 'bg-[#eef8fc] text-[#528FB9]' : ''">Public</div>
                                     </div>
                                 </div>
                             </div>
@@ -503,16 +503,11 @@
                                     <svg class="w-7 h-7 text-[#528FB9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 </div>
                                 <div>
-                                    <template x-if="time_limit_minutes">
+                                    <template x-if="time_limit_minutes && time_limit_minutes > 0">
                                         <div class="text-2xl font-black text-black" x-text="time_limit_minutes + 'm'"></div>
                                     </template>
-                                    <template x-if="!time_limit_minutes">
-                                        <div class="text-2xl font-black text-black py-1">
-                                            <svg class="w-10 h-10 text-[#528FB9]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                <path d="M18.121 8.879a3 3 0 10-4.242 4.242 3 3 0 004.242-4.242zM5.879 15.121a3 3 0 104.242-4.242 3 3 0 00-4.242 4.242z" />
-                                                <path d="M13.879 13.121l-3.758-2.242M13.879 10.879l-3.758 2.242" />
-                                            </svg>
-                                        </div>
+                                    <template x-if="!time_limit_minutes || time_limit_minutes <= 0">
+                                        <div class="text-xl font-black text-[#528FB9] py-1">No Limit</div>
                                     </template>
                                     <div class="text-sm font-bold text-gray-400">Time Limit</div>
                                 </div>
@@ -694,8 +689,9 @@
             allow_copy: {{ old("allow_copy", $quiz->allow_copy ?? false) ? 'true' : 'false' }},
 
             // Major/Course Data for Summary
-            majors: {!! json_encode($majors->map(fn($m) => ['id' => $m->id, 'name' => $m->name])) !!},
-            courses: {!! json_encode($courses->map(fn($c) => ['id' => $c->id, 'name' => $c->name])) !!},
+            majors: {!! json_encode($majors->map(fn($m) => ['id' => $m->id_major, 'name' => $m->name])) !!},
+            courses: {!! json_encode($courses->map(fn($c) => ['id' => $c->id_course, 'name' => $c->name])) !!},
+            folders: {!! json_encode($folders->map(fn($f) => ['id' => $f->id_folder, 'name' => $f->name])) !!},
 
             // Questions System (Alpine Managed)
             questions: {!! json_encode($questionsData) !!},
@@ -760,7 +756,7 @@
                 if (vis === 'published') {
                     this.validationErrors = [];
 
-                    // 1. Detail Fields (except description)
+                    // 1. Detail Fields (Folder, Description, and Duration are optional)
                     if (!this.title || !this.major_id || !this.course_id || !this.access) {
                         this.validationErrors.push({ msg: 'Basic quiz details are incomplete (Title, Major, Course, etc.)', targetStep: 1 });
                     }
@@ -959,6 +955,11 @@
             getSelectedCourseName() {
                 const course = this.courses.find(c => c.id == this.course_id);
                 return course ? course.name : '';
+            },
+
+            getSelectedFolderName() {
+                const folder = this.folders.find(f => f.id == this.folder_id);
+                return folder ? folder.name : '';
             },
 
             goToSummary() {

@@ -95,6 +95,21 @@
                                 </p>
                             </div>
 
+                            {{-- Notifikasi Sukses --}}
+                            @if (session('success'))
+                                <div class="mt-8 flex items-center gap-3 rounded-[20px] bg-green-50 px-5 py-4 text-green-800 shadow-sm sm:gap-4 sm:px-6">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 sm:h-12 sm:w-12">
+                                        <svg class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-base font-bold sm:text-lg">Success!</p>
+                                        <p class="text-sm font-medium opacity-90 sm:text-base">{{ session('success') }}</p>
+                                    </div>
+                                </div>
+                            @endif
+
                             {{-- Form Login --}}
                             <form method="POST" action="{{ route('login') }}" class="mt-8 w-full space-y-4 sm:mt-10 lg:mt-11">
                                 @csrf
