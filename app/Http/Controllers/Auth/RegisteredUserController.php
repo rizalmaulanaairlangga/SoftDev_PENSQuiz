@@ -41,12 +41,12 @@ class RegisteredUserController extends Controller
                 'email',
                 'max:255',
                 'unique:users,email',
-                'ends_with:@student.pens.ac.id'
+                'ends_with:pens.ac.id'
             ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
+        User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'username' => $request->username,
@@ -54,10 +54,6 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        return redirect()->route('dashboard');
+        return redirect()->route('login')->with('success', 'Registration successful! Please login to continue.');
     }
 }

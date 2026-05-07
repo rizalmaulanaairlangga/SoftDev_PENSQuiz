@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-05-07] - Registration, Dashboard, & Quiz Snapshot System Fixes
+
+### Fixed
+- **Registration Flow**: 
+    - Added missing `username` field to the registration form to satisfy backend validation.
+    - Updated `RegisteredUserController` to support a broader email domain (`@pens.ac.id`) and redirect to the login page with a success message instead of auto-logging in.
+- **Quiz Publishing (Form Step 1)**:
+    - Fixed a critical data synchronization bug where Major and Course selections were not correctly captured by the Alpine.js validation engine, preventing successful publishing.
+    - Standardized dropdown logic to update the parent state directly.
+- **Quiz Play (Snapshot System)**:
+    - Resolved 500 Server Errors when starting a quiz by implementing the missing Snapshot creation logic.
+    - Added a fallback in the attempt start process to generate a snapshot on-the-fly if it's missing, ensuring older quizzes are still playable.
+- **Stats Consistency**: Fixed incorrect primary key mapping (`id_major` vs `id`) in the frontend summary view data.
+
+### Added
+- **Intelligent Dashboard Empty States**:
+    - Introduced actionable call-to-action (CTA) buttons when statistics are zero.
+    - Displays "Start Create Quiz" if the user has no quizzes.
+    - Displays "Start Play Quiz" if the user has no attempts or recently opened quizzes.
+- **Optional Quiz Details**:
+    - Folder, Description, and Duration are now officially optional in both frontend and backend.
+    - Duration of `0` is now interpreted and displayed as "No Time Limit".
+
+### Technical
+- Implemented `createSnapshot()` method in the `MyQuiz` model to capture a point-in-time state of questions and options.
+- Refactored `MyQuizController` to trigger snapshot generation upon storage or update of published quizzes.
+- Optimized Alpine.js form handler to reduce nested `x-data` scopes, improving state reliability.
+
+
 ## [2026-05-06] - Quiz Functionality & Data Consistency Improvements
 
 ### Fixed

@@ -33,6 +33,19 @@ class AttemptController extends Controller
             ->first();
 
         if (!$snapshot) {
+            // Fallback: create snapshot if missing
+            $quiz = \App\Models\MyQuiz::find($id);
+            if (!$quiz) abort(404, 'Quiz not found');
+            
+            $quiz->createSnapshot();
+            
+            $snapshot = DB::table('quiz_snapshots')
+                ->where('quiz_id', $id)
+                ->orderByDesc('version_number')
+                ->first();
+        }
+
+        if (!$snapshot) {
             abort(500, 'Snapshot not found');
         }
 

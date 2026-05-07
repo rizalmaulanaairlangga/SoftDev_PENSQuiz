@@ -185,6 +185,9 @@ class MyQuizController extends Controller
         }
 
         DB::transaction(function () use ($request, $validated, $normalizedQuestions) {
+            $timeLimit = $validated['time_limit_minutes'] ?? null;
+            if ($timeLimit !== null && $timeLimit <= 0) $timeLimit = null;
+
             $quiz = MyQuiz::create([
                 'author_id' => Auth::id(),
                 'folder_id' => $request->input('folder_id'),
@@ -193,7 +196,7 @@ class MyQuizController extends Controller
 
                 'major_id' => $request->input('major_id'),
                 'course_id' => $validated['course_id'] ?? null,
-                'time_limit_minutes' => $validated['time_limit_minutes'] ?? null,
+                'time_limit_minutes' => $timeLimit,
 
                 'visibility' => $validated['visibility'],
                 'access' => $validated['access'],
@@ -206,6 +209,10 @@ class MyQuizController extends Controller
 
             $this->syncQuestions($quiz, $normalizedQuestions);
             $this->syncTags($quiz, $request->input('tags', ''));
+
+            if ($isPublish) {
+                $quiz->createSnapshot();
+            }
         });
 
         return redirect()
@@ -282,6 +289,9 @@ class MyQuizController extends Controller
                 $coverImageUrl = $this->storeCover($request);
             }
 
+            $timeLimit = $validated['time_limit_minutes'] ?? null;
+            if ($timeLimit !== null && $timeLimit <= 0) $timeLimit = null;
+
             $myquiz->update([
                 'title' => $validated['title'] ?? 'Untitled Quiz',
                 'description' => $validated['description'] ?? null,
@@ -289,7 +299,7 @@ class MyQuizController extends Controller
 
                 'major_id' => $request->input('major_id', $myquiz->major_id),
                 'course_id' => $validated['course_id'] ?? $myquiz->course_id,
-                'time_limit_minutes' => $validated['time_limit_minutes'] ?? $myquiz->time_limit_minutes,
+                'time_limit_minutes' => $timeLimit,
 
                 'visibility' => $validated['visibility'],
                 'access' => $validated['access'],
@@ -302,6 +312,10 @@ class MyQuizController extends Controller
 
             $this->syncQuestions($myquiz, $normalizedQuestions);
             $this->syncTags($myquiz, $request->input('tags', ''));
+
+            if ($isPublish) {
+                $myquiz->createSnapshot();
+            }
         });
 
         return redirect()
@@ -330,7 +344,7 @@ class MyQuizController extends Controller
             'description' => ['nullable', 'string'],
 
             'course_id' => ['nullable', 'integer', 'exists:courses,id_course'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1'],
+            'time_limit_minutes' => ['nullable', 'integer', 'min:0'],
 
             'access' => ['required', 'in:public,private'],
             'visibility' => ['required', 'in:draft,published'],
@@ -584,4 +598,5 @@ class MyQuizController extends Controller
 
         $quiz->tags()->sync($tagIds);
     }
+
 }

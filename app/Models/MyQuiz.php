@@ -74,4 +74,38 @@ class MyQuiz extends Model
     {
         return $this->belongsTo(Major::class, 'major_id', 'id_major');
     }
-}
+
+    public function createSnapshot(): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            $snapshotId = \Illuminate\Support\Facades\DB::table('quiz_snapshots')->insertGetId([
+                'quiz_id' => $this->id_quiz,
+                'version_number' => $this->version_number,
+                'created_at' => now(),
+            ]);
+
+            $questions = $this->questions()->with('options')->get();
+
+            foreach ($questions as $question) {
+                $snapshotQuestionId = \Illuminate\Support\Facades\DB::table('snapshot_questions')->insertGetId([
+                    'snapshot_id' => $snapshotId,
+                    'original_question_id' => $question->id_question,
+                    'content' => $question->content,
+                    'question_type' => $question->question_type,
+                    'order_index' => $question->order_index,
+                    'explanation' => $question->explanation,
+                ]);
+
+                foreach ($question->options as $option) {
+                    \Illuminate\Support\Facades\DB::table('snapshot_options')->insert([
+                        'snapshot_question_id' => $snapshotQuestionId,
+                        'original_option_id' => $option->id_option,
+                        'content' => $option->content,
+                        'is_correct' => $option->is_correct,
+                        'order_index' => $option->order_index,
+                    ]);
+                }
+            }
+        });
+    }
+}
